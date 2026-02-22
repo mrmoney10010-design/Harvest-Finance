@@ -1,16 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Server, TransactionBuilder, Networks, Operation, Keypair, Asset, Memo } from 'stellar-sdk';
+import * as StellarSdk from 'stellar-sdk';
 
 @Injectable()
 export class StellarService {
   private readonly logger = new Logger(StellarService.name);
-  private server: Server | null = null;
+  private server: StellarSdk.Horizon.Server | null = null;
 
   constructor() {
     const horizon = process.env.STELLAR_HORIZON_URL || '';
     if (horizon) {
       try {
-        this.server = new Server(horizon);
+        this.server = new StellarSdk.Horizon.Server(horizon);
       } catch (e) {
         this.logger.warn('Failed to init Stellar server, falling back to mock');
         this.server = null;
