@@ -7,6 +7,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { OrdersModule } from './orders/orders.module';
 import { HealthModule } from './health/health.module';
+import { DatabaseModule } from './database/database.module';
+import { User, Order, Transaction, Verification, CreditScore } from './database/entities';
+import { CreateInitialSchema1700000000000 } from './database/migrations/1700000000000-CreateInitialSchema';
 
 @Module({
   imports: [
@@ -22,8 +25,11 @@ import { HealthModule } from './health/health.module';
         username: configService.get<string>('DB_USER'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        autoLoadEntities: true,
-        synchronize: true, // Auto synchronize for development
+        entities: [User, Order, Transaction, Verification, CreditScore],
+        migrations: [CreateInitialSchema1700000000000],
+        synchronize: false, // Disable auto-sync, use migrations
+        migrationsRun: false, // Run migrations manually
+        logging: configService.get<string>('NODE_ENV') === 'development',
       }),
       inject: [ConfigService],
     }),
@@ -45,6 +51,7 @@ import { HealthModule } from './health/health.module';
     }),
     HealthModule,
     OrdersModule,
+    DatabaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],
