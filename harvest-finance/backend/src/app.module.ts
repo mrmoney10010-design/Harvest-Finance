@@ -10,7 +10,7 @@ import { HealthModule } from './health/health.module';
 import { VerificationModule } from './verification/verification.module';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
-import { User, Order, Transaction, Verification, CreditScore } from './database/entities';
+import { User, Order, Transaction, Verification, CreditScore, Vault, VaultDeposit } from './database/entities';
 import { CreateInitialSchema1700000000000 } from './database/migrations/1700000000000-CreateInitialSchema';
 
 @Module({
@@ -27,7 +27,7 @@ import { CreateInitialSchema1700000000000 } from './database/migrations/17000000
         username: configService.get<string>('DB_USER'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [User, Order, Transaction, Verification, CreditScore],
+        entities: [User, Order, Transaction, Verification, CreditScore, Vault, VaultDeposit],
         migrations: [CreateInitialSchema1700000000000],
         synchronize: false, // Disable auto-sync, use migrations
         migrationsRun: false, // Run migrations manually

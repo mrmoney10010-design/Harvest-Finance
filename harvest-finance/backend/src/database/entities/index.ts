@@ -7,3 +7,5 @@ export { Transaction, TransactionStatus, TransactionType } from './transaction.e
 export { Verification, VerificationStatus } from './verification.entity';
 export type { CreditScoreHistoryEntry } from './credit-score.entity';
 export { CreditScore } from './credit-score.entity';
+export { Vault } from './vault.entity';
+export { VaultDeposit } from './vault-deposit.entity';
