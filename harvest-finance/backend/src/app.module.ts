@@ -10,8 +10,19 @@ import { HealthModule } from './health/health.module';
 import { VerificationModule } from './verification/verification.module';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
-import { User, Order, Transaction, Verification, CreditScore } from './database/entities';
+import { UsersModule } from './users/users.module';
+import { VaultsModule } from './vaults/vaults.module';
+import {
+  User,
+  Order,
+  Transaction,
+  Verification,
+  CreditScore,
+  Vault,
+  Deposit,
+} from './database/entities';
 import { CreateInitialSchema1700000000000 } from './database/migrations/1700000000000-CreateInitialSchema';
+import { CreateVaultsAndDeposits1700000000003 } from './database/migrations/1700000000003-CreateVaultsAndDeposits';
 
 @Module({
   imports: [
@@ -27,8 +38,19 @@ import { CreateInitialSchema1700000000000 } from './database/migrations/17000000
         username: configService.get<string>('DB_USER'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [User, Order, Transaction, Verification, CreditScore],
-        migrations: [CreateInitialSchema1700000000000],
+        entities: [
+          User,
+          Order,
+          Transaction,
+          Verification,
+          CreditScore,
+          Vault,
+          Deposit,
+        ],
+        migrations: [
+          CreateInitialSchema1700000000000,
+          CreateVaultsAndDeposits1700000000003,
+        ],
         synchronize: false, // Disable auto-sync, use migrations
         migrationsRun: false, // Run migrations manually
         logging: configService.get<string>('NODE_ENV') === 'development',
@@ -42,7 +64,10 @@ import { CreateInitialSchema1700000000000 } from './database/migrations/17000000
         const store = await redisStore({
           socket: {
             host: configService.get<string>('REDIS_HOST'),
-            port: parseInt(configService.get<string>('REDIS_PORT') || '6379', 10),
+            port: parseInt(
+              configService.get<string>('REDIS_PORT') || '6379',
+              10,
+            ),
           },
         });
         return {
@@ -52,6 +77,8 @@ import { CreateInitialSchema1700000000000 } from './database/migrations/17000000
       inject: [ConfigService],
     }),
     AuthModule,
+    UsersModule,
+    VaultsModule,
     HealthModule,
     OrdersModule,
     VerificationModule,
