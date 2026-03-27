@@ -2,6 +2,7 @@
 
 import React from "react";
 import { VaultOverview } from "@/components/dashboard/VaultOverview";
+import { SeasonalTipsList, MilestoneNotification } from "@/components/seasonal-tips";
 import { TrendingUp, Wallet, ArrowRight } from "lucide-react";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +26,9 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Milestone Notifications */}
+      <MilestoneNotification />
 
       {/* Quick Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -67,6 +71,11 @@ export default function DashboardPage() {
             </div>
           </CardBody>
         </Card>
+      </div>
+
+      {/* Seasonal Tips Section */}
+      <div className="pt-4 border-t border-gray-200">
+        <SeasonalTipsList showFilters={true} />
       </div>
 
       {/* Main Content Sections */}
