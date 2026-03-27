@@ -13,6 +13,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { VaultsModule } from './vaults/vaults.module';
 import { FarmIntelligenceModule } from './farm-intelligence/farm-intelligence.module';
+import { AchievementsModule } from './achievements/achievements.module';
 import { RewardsModule } from './rewards/rewards.module';
 import {
   User,
@@ -22,9 +23,11 @@ import {
   CreditScore,
   Vault,
   Deposit,
+  Achievement,
   Reward,
 } from './database/entities';
 import { CreateInitialSchema1700000000000 } from './database/migrations/1700000000000-CreateInitialSchema';
+import { CreateAchievements1700000000004 } from './database/migrations/1700000000004-CreateAchievements';
 import { CreateRewards1700000000005 } from './database/migrations/1700000000005-CreateRewards';
 import { CreateVaultsAndDeposits1700000000003 } from './database/migrations/1700000000003-CreateVaultsAndDeposits';
 
@@ -50,11 +53,13 @@ import { CreateVaultsAndDeposits1700000000003 } from './database/migrations/1700
           CreditScore,
           Vault,
           Deposit,
+          Achievement,
           Reward,
         ],
         migrations: [
           CreateInitialSchema1700000000000,
           CreateVaultsAndDeposits1700000000003,
+          CreateAchievements1700000000004,
           CreateRewards1700000000005,
         ],
         synchronize: false, // Disable auto-sync, use migrations
@@ -90,6 +95,7 @@ import { CreateVaultsAndDeposits1700000000003 } from './database/migrations/1700
     VerificationModule,
     DatabaseModule,
     FarmIntelligenceModule,
+    AchievementsModule,
     RewardsModule,
   ],
   controllers: [AppController],
