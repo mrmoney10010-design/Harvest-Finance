@@ -1,58 +1,74 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { 
-  Modal, 
-  ModalHeader, 
-  ModalBody, 
-  ModalFooter, 
-  Button, 
+import React, { useState } from "react";
+import {
+  Modal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
   Input,
   Stack,
-  Badge
-} from '@/components/ui';
-import { Wallet, ArrowUpRight } from 'lucide-react';
-import axios from 'axios';
-import { useAuthStore } from '@/lib/stores/auth-store';
+  Badge,
+} from "@/components/ui";
+import { Wallet, ArrowUpRight } from "lucide-react";
+import axios from "axios";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { enqueueOfflineAction } from "@/lib/offline-support";
 
 interface DepositModalProps {
   isOpen: boolean;
   onClose: () => void;
   vault: any;
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 export const DepositModal: React.FC<DepositModalProps> = ({
   isOpen,
   onClose,
   vault,
-  onSuccess
+  onSuccess,
 }) => {
   const { token } = useAuthStore();
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleDeposit = async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      setError('Please enter a valid amount');
+      setError("Please enter a valid amount");
       return;
     }
 
     setIsLoading(true);
     setError(null);
     try {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        enqueueOfflineAction({
+          type: "deposit",
+          endpoint: `http://localhost:3001/api/v1/farm-vaults/${vault.id}/deposit`,
+          payload: { amount: Number(amount) },
+        });
+        onSuccess?.();
+        onClose();
+        setAmount("");
+        return;
+      }
+
       await axios.post(
         `http://localhost:3001/api/v1/farm-vaults/${vault.id}/deposit`,
         { amount: Number(amount) },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      onSuccess();
+      onSuccess?.();
       onClose();
-      setAmount('');
+      setAmount("");
     } catch (err: any) {
-      console.error('Deposit failed:', err);
-      setError(err.response?.data?.message || 'Deposit failed. Please check your connection.');
+      console.error("Deposit failed:", err);
+      setError(
+        err.response?.data?.message ||
+          "Deposit failed. Please check your connection.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -65,13 +81,15 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         <Stack gap="lg">
           <div className="bg-harvest-green-50 p-4 rounded-xl border border-harvest-green-100 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-harvest-green-700 uppercase tracking-wider">Active Vault</p>
+              <p className="text-xs font-semibold text-harvest-green-700 uppercase tracking-wider">
+                Active Vault
+              </p>
               <h4 className="font-bold text-gray-900">{vault.name}</h4>
             </div>
             <Badge variant="success">APY: {vault.cropCycle?.yieldRate}%</Badge>
           </div>
 
-          <Input 
+          <Input
             label="Amount (USD)"
             placeholder="0.00"
             value={amount}
@@ -89,7 +107,17 @@ export const DepositModal: React.FC<DepositModalProps> = ({
             </p>
             <p className="flex justify-between">
               <span>Estimated Seasonal Yield:</span>
-              <span className="font-bold text-harvest-green-600">+${((Number(amount) || 0) * (vault.cropCycle?.yieldRate || 0) / 100).toFixed(2)}</span>
+              <span className="font-bold text-harvest-green-600">
+                +$
+                {(
+                  ((Number(amount) || 0) * (vault.cropCycle?.yieldRate || 0)) /
+                  100
+                ).toFixed(2)}
+              </span>
+            </p>
+            <p className="mt-2 text-xs text-gray-500">
+              Offline deposits will be queued automatically and synced when your
+              connection returns.
             </p>
           </div>
         </Stack>
@@ -98,9 +126,9 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         <Button variant="ghost" onClick={onClose} isDisabled={isLoading}>
           Cancel
         </Button>
-        <Button 
-          variant="primary" 
-          onClick={handleDeposit} 
+        <Button
+          variant="primary"
+          onClick={handleDeposit}
           isLoading={isLoading}
           leftIcon={<ArrowUpRight className="w-4 h-4" />}
         >

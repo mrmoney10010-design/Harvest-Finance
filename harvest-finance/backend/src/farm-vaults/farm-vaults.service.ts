@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { FarmVault, FarmVaultStatus } from '../database/entities/farm-vault.entity';
+import {
+  FarmVault,
+  FarmVaultStatus,
+} from '../database/entities/farm-vault.entity';
 import { CropCycle } from '../database/entities/crop-cycle.entity';
 
 @Injectable()
@@ -14,8 +21,13 @@ export class FarmVaultsService {
     private dataSource: DataSource,
   ) {}
 
-  async createVault(userId: string, data: { name: string; cropCycleId: string; targetAmount: number }) {
-    const cropCycle = await this.cropCycleRepository.findOne({ where: { id: data.cropCycleId } });
+  async createVault(
+    userId: string,
+    data: { name: string; cropCycleId: string; targetAmount: number },
+  ) {
+    const cropCycle = await this.cropCycleRepository.findOne({
+      where: { id: data.cropCycleId },
+    });
     if (!cropCycle) {
       throw new NotFoundException('Crop cycle not found');
     }
@@ -38,12 +50,34 @@ export class FarmVaultsService {
       throw new BadRequestException('Deposit amount must be greater than 0');
     }
 
-    const vault = await this.farmVaultRepository.findOne({ where: { id: vaultId, userId } });
+    const vault = await this.farmVaultRepository.findOne({
+      where: { id: vaultId, userId },
+    });
     if (!vault) {
       throw new NotFoundException('Farm vault not found');
     }
 
     vault.balance = Number(vault.balance) + amount;
+    return this.farmVaultRepository.save(vault);
+  }
+
+  async withdraw(vaultId: string, userId: string, amount: number) {
+    if (amount <= 0) {
+      throw new BadRequestException('Withdrawal amount must be greater than 0');
+    }
+
+    const vault = await this.farmVaultRepository.findOne({
+      where: { id: vaultId, userId },
+    });
+    if (!vault) {
+      throw new NotFoundException('Farm vault not found');
+    }
+
+    if (Number(vault.balance) < amount) {
+      throw new BadRequestException('Insufficient balance in farm vault');
+    }
+
+    vault.balance = Number(vault.balance) - amount;
     return this.farmVaultRepository.save(vault);
   }
 
@@ -54,7 +88,7 @@ export class FarmVaultsService {
       order: { createdAt: 'DESC' },
     });
 
-    return vaults.map(v => this.calculateProjections(v));
+    return vaults.map((v) => this.calculateProjections(v));
   }
 
   async getCropCycles() {
@@ -66,7 +100,7 @@ export class FarmVaultsService {
     const startDate = new Date(vault.startDate);
     const diffTime = Math.max(0, now.getTime() - startDate.getTime());
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     const durationDays = vault.cropCycle.durationDays;
     const yieldRate = Number(vault.cropCycle.yieldRate);
     const balance = Number(vault.balance);
@@ -80,8 +114,16 @@ export class FarmVaultsService {
     const milestones = [
       { name: 'Seed Funding', target: 25, achieved: progressPercentage >= 25 },
       { name: 'Early Growth', target: 50, achieved: progressPercentage >= 50 },
-      { name: 'Mid-Season Bloom', target: 75, achieved: progressPercentage >= 75 },
-      { name: 'Harvest Ready', target: 100, achieved: progressPercentage >= 100 },
+      {
+        name: 'Mid-Season Bloom',
+        target: 75,
+        achieved: progressPercentage >= 75,
+      },
+      {
+        name: 'Harvest Ready',
+        target: 100,
+        achieved: progressPercentage >= 100,
+      },
     ];
 
     return {
@@ -92,9 +134,11 @@ export class FarmVaultsService {
         progressPercentage,
         currentGrowth: Number(currentGrowth.toFixed(2)),
         totalProjectedGrowth: Number(totalProjectedGrowth.toFixed(2)),
-        estimatedTotalAtMaturity: Number((balance + totalProjectedGrowth).toFixed(2)),
+        estimatedTotalAtMaturity: Number(
+          (balance + totalProjectedGrowth).toFixed(2),
+        ),
         milestones,
-      }
+      },
     };
   }
 }
