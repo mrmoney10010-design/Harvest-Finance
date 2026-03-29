@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '@/lib/api-client';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { 
   Container, 
