@@ -12,7 +12,7 @@ import {
   Badge,
 } from "@/components/ui";
 import { Wallet, ArrowUpRight } from "lucide-react";
-import axios from "axios";
+import axios from "@/lib/api-client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { enqueueOfflineAction } from "@/lib/offline-support";
 
@@ -79,9 +79,9 @@ export const DepositModal: React.FC<DepositModalProps> = ({
       <ModalHeader title="Deposit Funds" onClose={onClose} />
       <ModalBody>
         <Stack gap="lg">
-          <div className="bg-harvest-green-50 p-4 rounded-xl border border-harvest-green-100 flex items-center justify-between">
+          <div className="flex items-center justify-between rounded-xl border border-harvest-green-100 bg-harvest-green-50 p-4">
             <div>
-              <p className="text-xs font-semibold text-harvest-green-700 uppercase tracking-wider">
+              <p className="text-xs font-semibold uppercase tracking-wider text-harvest-green-700">
                 Active Vault
               </p>
               <h4 className="font-bold text-gray-900">{vault.name}</h4>
@@ -100,8 +100,8 @@ export const DepositModal: React.FC<DepositModalProps> = ({
             autoFocus
           />
 
-          <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-100">
-            <p className="flex justify-between mb-1">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm text-gray-500">
+            <p className="mb-1 flex justify-between">
               <span>Current Balance:</span>
               <span className="font-bold text-gray-900">${vault.balance}</span>
             </p>

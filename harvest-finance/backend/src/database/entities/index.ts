@@ -15,4 +15,5 @@ export {
 export { User, UserRole } from './user.entity';
 export { Verification, VerificationStatus } from './verification.entity';
 export { Vault, VaultStatus, VaultType } from './vault.entity';
+export { VaultDeposit } from './vault-deposit.entity';
 export { Withdrawal, WithdrawalStatus } from './withdrawal.entity';

@@ -5,6 +5,12 @@ import { AIAssistantChat } from "@/components/ai-assistant";
 import { ConnectivityBanner } from "@/components/dashboard/ConnectivityBanner";
 import { CropRecommendationPanel } from "@/components/dashboard/CropRecommendationPanel";
 import { FarmActivityMap } from "@/components/dashboard/FarmActivityMap";
+import { VaultOverview } from "@/components/dashboard/VaultOverview";
+import { WeatherWidget } from "@/components/dashboard/WeatherWidget";
+import {
+  SeasonalTipsList,
+  MilestoneNotification,
+} from "@/components/seasonal-tips";
 import { useAIAssistantStore } from "@/hooks/useAIAssistant";
 import { Badge, Button, Card, CardBody } from "@/components/ui";
 import {
@@ -263,6 +269,9 @@ export default function DashboardPage() {
         onSync={syncQueuedActions}
       />
 
+      <WeatherWidget />
+      <MilestoneNotification />
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {quickActions.map((card) => {
           const Icon = card.icon;
@@ -292,6 +301,7 @@ export default function DashboardPage() {
         })}
       </div>
 
+      <SeasonalTipsList showFilters />
       <CropRecommendationPanel isOnline={isOnline} />
 
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.95fr)]">
@@ -336,6 +346,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      <VaultOverview />
       <AIAssistantChat context={aiContext} />
     </div>
   );

@@ -1,12 +1,23 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AppModule } from './app.module';
+import { CustomLoggerService } from './logger/custom-logger.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+  const customLogger = app.get(CustomLoggerService);
+  app.useLogger(customLogger);
+  app.useGlobalFilters(
+    new HttpExceptionFilter(customLogger),
+    new ThrottlerExceptionFilter(),
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -17,7 +28,8 @@ async function bootstrap() {
       },
     }),
   );
-  app.useGlobalFilters(new ThrottlerExceptionFilter());
+
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   const config = new DocumentBuilder()
     .setTitle('Harvest Finance API')

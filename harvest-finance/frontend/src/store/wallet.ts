@@ -61,7 +61,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         error: null,
       });
 
-      // Fetch balances after connecting
       get().refreshBalances();
     } catch (err) {
       set({
@@ -87,7 +86,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     if (!address) return;
 
     try {
-      // Mock balances for demo - in production, fetch from Stellar Horizon API
       const mockBalances: TokenBalance[] = [
         { symbol: "XLM", balance: "1,250.45", usdValue: 156.31 },
         { symbol: "USDC", balance: "500.00", usdValue: 500.0 },
@@ -106,7 +104,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
 }));
 
-// Utility to shorten address for display
 export function shortenAddress(address: string, chars = 4): string {
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;
 }

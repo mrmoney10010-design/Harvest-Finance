@@ -1,7 +1,8 @@
 import { CacheModule } from '@nestjs/cache-manager';
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AchievementsModule } from './achievements/achievements.module';
@@ -23,6 +24,7 @@ import {
   User,
   Verification,
   Vault,
+  VaultDeposit,
   Withdrawal,
 } from './database/entities';
 import { CreateInitialSchema1700000000000 } from './database/migrations/1700000000000-CreateInitialSchema';
@@ -36,8 +38,11 @@ import { ExportModule } from './export/export.module';
 import { FarmIntelligenceModule } from './farm-intelligence/farm-intelligence.module';
 import { FarmVaultsModule } from './farm-vaults/farm-vaults.module';
 import { HealthModule } from './health/health.module';
+import { LoggerModule } from './logger/logger.module';
+import { LoggerMiddleware } from './logger/logger.middleware';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
+import { RealtimeModule } from './realtime/realtime.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { UsersModule } from './users/users.module';
 import { VaultsModule } from './vaults/vaults.module';
@@ -70,6 +75,7 @@ import { VerificationModule } from './verification/verification.module';
           Verification,
           CreditScore,
           Vault,
+          VaultDeposit,
           Deposit,
           Achievement,
           Reward,
@@ -98,6 +104,7 @@ import { VerificationModule } from './verification/verification.module';
       ttl: 600,
       max: 100,
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
     VaultsModule,
@@ -112,6 +119,8 @@ import { VerificationModule } from './verification/verification.module';
     AdminModule,
     ExportModule,
     FarmVaultsModule,
+    RealtimeModule,
+    LoggerModule,
   ],
   controllers: [AppController],
   providers: [
@@ -122,4 +131,8 @@ import { VerificationModule } from './verification/verification.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}

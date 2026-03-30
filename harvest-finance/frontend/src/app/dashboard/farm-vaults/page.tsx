@@ -9,25 +9,18 @@ import {
   Badge,
   Stack,
   Inline,
-  Container,
-  Section,
 } from "@/components/ui";
 import {
   Plus,
   Sprout,
-  TrendingUp,
   Wallet,
-  ArrowRight,
-  Calendar,
   ChevronRight,
-  Info,
-  History,
   Activity,
   Award,
   CircleHelp,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import axios from "axios";
+import axios from "@/lib/api-client";
 import { CreateVaultModal } from "@/components/farm-vaults/CreateVaultModal";
 import { FarmVaultCard } from "@/components/farm-vaults/FarmVaultCard";
 import { VaultAnalytics } from "@/components/dashboard/VaultAnalytics";
@@ -36,7 +29,6 @@ import { ExportButton } from "@/components/dashboard/ExportButton";
 import { AlertBanner } from "@/components/dashboard/AlertBanner";
 import { DepositModal } from "@/components/dashboard/DepositModal";
 import { WithdrawModal } from "@/components/dashboard/WithdrawModal";
-import { motion } from "framer-motion";
 
 const mockChartData = [
   { name: "Jan", deposits: 400, withdrawals: 120, growth: 10 },
@@ -118,7 +110,6 @@ export default function FarmVaultsPage() {
 
   useEffect(() => {
     fetchVaults();
-    // Show welcome alert
     const timer = setTimeout(() => setShowAlert(true), 1000);
     return () => clearTimeout(timer);
   }, [user]);
@@ -135,15 +126,15 @@ export default function FarmVaultsPage() {
         onClose={() => setShowAlert(false)}
       />
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
         <div>
           <Badge variant="success" className="mb-2">
             Farm Vault Dashboard
           </Badge>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
             Agricultural Wealth Hub
           </h1>
-          <p className="text-gray-500 mt-2 text-lg max-w-2xl">
+          <p className="mt-2 max-w-2xl text-lg text-gray-500">
             Manage your seasonal savings, track growth milestones, and visualize
             your harvest projections in one central place.
           </p>
@@ -165,18 +156,16 @@ export default function FarmVaultsPage() {
       {isLoading ? (
         <div className="flex justify-center py-20">
           <div className="flex flex-col items-center gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harvest-green-600"></div>
-            <p className="text-gray-500 font-medium animate-pulse">
+            <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-harvest-green-600" />
+            <p className="animate-pulse font-medium text-gray-500">
               Growing your dashboard...
             </p>
           </div>
         </div>
       ) : vaults.length > 0 ? (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Main Content Area */}
-          <div className="xl:col-span-2 space-y-8">
-            {/* Analytics Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+          <div className="space-y-8 xl:col-span-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <VaultAnalytics
                 title="Deposit vs Withdrawal Trends"
                 data={mockChartData}
@@ -189,7 +178,6 @@ export default function FarmVaultsPage() {
               />
             </div>
 
-            {/* Transaction History Section */}
             <Card variant="default">
               <CardHeader
                 title="Recent Vault Activity"
@@ -208,16 +196,16 @@ export default function FarmVaultsPage() {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50/50">
-                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">
                           Date
                         </th>
-                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">
                           Type
                         </th>
-                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">
                           Amount
                         </th>
-                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">
                           Status
                         </th>
                       </tr>
@@ -226,14 +214,14 @@ export default function FarmVaultsPage() {
                       {[1, 2, 3].map((i) => (
                         <tr
                           key={i}
-                          className="hover:bg-gray-50/50 transition-colors"
+                          className="transition-colors hover:bg-gray-50/50"
                         >
                           <td className="px-6 py-4 text-sm text-gray-600">
                             May {10 + i}, 2024
                           </td>
                           <td className="px-6 py-4">
                             <Inline gap="xs">
-                              <div className="w-2 h-2 rounded-full bg-harvest-green-500" />
+                              <div className="h-2 w-2 rounded-full bg-harvest-green-500" />
                               <span className="text-sm font-medium">
                                 Deposit
                               </span>
@@ -255,22 +243,21 @@ export default function FarmVaultsPage() {
               </CardBody>
             </Card>
 
-            {/* AI Assistant Placeholder */}
             <Card
               variant="outlined"
-              className="bg-gradient-to-br from-harvest-green-900 to-harvest-green-800 border-none relative overflow-hidden group"
+              className="group relative overflow-hidden border-none bg-gradient-to-br from-harvest-green-900 to-harvest-green-800"
             >
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/20 transition-all duration-700" />
-              <CardBody className="p-8 relative z-10">
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                  <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/30 shadow-2xl">
-                    <Activity className="w-10 h-10 text-white animate-pulse" />
+              <div className="absolute right-0 top-0 -mr-32 -mt-32 h-64 w-64 rounded-full bg-white/10 blur-3xl transition-all duration-700 group-hover:bg-white/20" />
+              <CardBody className="relative z-10 p-8">
+                <div className="flex flex-col items-center gap-8 md:flex-row">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/30 bg-white/20 shadow-2xl backdrop-blur-md">
+                    <Activity className="h-10 w-10 animate-pulse text-white" />
                   </div>
                   <div className="flex-1 text-center md:text-left">
-                    <h3 className="text-2xl font-bold text-white mb-2">
+                    <h3 className="mb-2 text-2xl font-bold text-white">
                       Smart Harvest Intelligence
                     </h3>
-                    <p className="text-harvest-green-100 text-lg opacity-90 max-w-xl">
+                    <p className="max-w-xl text-lg text-harvest-green-100 opacity-90">
                       Our AI-powered seasonal advisor is analyzing your vault
                       performance. Personalized tips and ROI optimizations are
                       coming soon!
@@ -278,7 +265,7 @@ export default function FarmVaultsPage() {
                   </div>
                   <Button
                     variant="outline"
-                    className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    className="border-white/30 bg-white/10 text-white hover:bg-white/20"
                   >
                     Notify Me
                   </Button>
@@ -287,9 +274,7 @@ export default function FarmVaultsPage() {
             </Card>
           </div>
 
-          {/* Sidebar Area */}
           <div className="space-y-8">
-            {/* active Vault Details */}
             {activeVault && (
               <div className="space-y-6">
                 <FarmVaultCard vault={activeVault} onUpdate={fetchVaults} />
@@ -324,21 +309,20 @@ export default function FarmVaultsPage() {
               </div>
             )}
 
-            {/* Seasonal Info */}
-            <Card variant="outlined" className="bg-amber-50 border-amber-100">
+            <Card variant="outlined" className="border-amber-100 bg-amber-50">
               <CardHeader title="Seasonal Tips" />
               <CardBody>
                 <Stack gap="md">
                   <div className="flex gap-3">
-                    <Award className="w-5 h-5 text-amber-600 shrink-0" />
-                    <p className="text-sm text-amber-800 font-medium">
+                    <Award className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                    <p className="text-sm font-medium text-amber-800">
                       Premium seeds can increase yield by up to 20% in rainy
                       conditions.
                     </p>
                   </div>
                   <div className="flex gap-3">
-                    <CircleHelp className="w-5 h-5 text-amber-600 shrink-0" />
-                    <p className="text-sm text-amber-800 font-medium">
+                    <CircleHelp className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                    <p className="text-sm font-medium text-amber-800">
                       Remember to lock in your fertilizer prices before the
                       pre-season ends.
                     </p>
@@ -349,15 +333,15 @@ export default function FarmVaultsPage() {
           </div>
         </div>
       ) : (
-        <Card variant="default" className="border-dashed border-2 py-20">
+        <Card variant="default" className="border-2 border-dashed py-20">
           <CardBody className="text-center">
-            <div className="w-20 h-20 bg-harvest-green-50 rounded-full flex items-center justify-center text-harvest-green-600 mx-auto mb-6">
-              <Sprout className="w-10 h-10" />
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-harvest-green-50 text-harvest-green-600">
+              <Sprout className="h-10 w-10" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            <h3 className="mb-3 text-2xl font-bold text-gray-900">
               Your Farm is Empty
             </h3>
-            <p className="text-gray-500 max-w-sm mx-auto mb-10 text-lg">
+            <p className="mx-auto mb-10 max-w-sm text-lg text-gray-500">
               Start your first savings vault for the upcoming season to unlock
               analytics, milestones, and expert projections.
             </p>
