@@ -1,5 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+ feat/withdraw-api
+import { VaultsService } from './vaults.service';
+import { VaultsController } from './vaults.controller';
+import { Vault, VaultDeposit } from '../database/entities';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Vault, VaultDeposit])],
+=======
 import { VaultsController } from './vaults.controller';
 import { VaultsService } from './vaults.service';
 import { Vault } from '../database/entities/vault.entity';
@@ -16,6 +24,7 @@ import { RealtimeModule } from '../realtime/realtime.module';
     NotificationsModule,
     RealtimeModule,
   ],
+ main
   controllers: [VaultsController],
   providers: [VaultsService],
   exports: [VaultsService],
