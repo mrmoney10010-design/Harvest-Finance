@@ -1,6 +1,12 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
-import { CustomLoggerService } from '../logger/custom-logger.service';
+import { CustomLoggerService } from '../../logger/custom-logger.service';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -26,18 +32,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
-      message: typeof message === 'string' ? message : (message as any).message || message,
+      message:
+        typeof message === 'string'
+          ? message
+          : (message as any).message || message,
     };
 
     // Include detailed error information in logs, but keep response clean
-    let trace = undefined;
+    let trace: string | undefined;
     if (exception instanceof Error) {
-        trace = exception.stack;
+      trace = exception.stack;
     }
     this.logger.error(
       `${request.method} ${request.url} - Error: ${JSON.stringify(errorResponse.message)}`,
       trace,
-      'ExceptionFilter'
+      'ExceptionFilter',
     );
 
     response.status(status).json(errorResponse);

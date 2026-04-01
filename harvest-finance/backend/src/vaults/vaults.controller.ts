@@ -17,11 +17,12 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { VaultsService } from './vaults.service';
 import { DepositDto } from './dto/deposit.dto';
-import { 
-  DepositVaultResponseDto, 
-  VaultResponseDto 
+import {
+  DepositVaultResponseDto,
+  VaultResponseDto,
 } from './dto/vault-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -36,6 +37,7 @@ export class VaultsController {
    * Deposit funds into a vault
    */
   @Post(':vaultId/deposit')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Deposit funds into a vault' })
   @ApiParam({
@@ -79,6 +81,7 @@ export class VaultsController {
    * Withdraw funds from a vault
    */
   @Post(':vaultId/withdraw')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Withdraw funds from a vault' })
   @ApiParam({

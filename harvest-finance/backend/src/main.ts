@@ -1,11 +1,12 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { CustomLoggerService } from './logger/custom-logger.service';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { NestFactory } from '@nestjs/core';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
+import { CustomLoggerService } from './logger/custom-logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -13,8 +14,10 @@ async function bootstrap() {
   });
   const customLogger = app.get(CustomLoggerService);
   app.useLogger(customLogger);
-  app.useWebSocketAdapter(new IoAdapter(app));
-  app.useGlobalFilters(new HttpExceptionFilter(customLogger));
+  app.useGlobalFilters(
+    new HttpExceptionFilter(customLogger),
+    new ThrottlerExceptionFilter(),
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -26,7 +29,6 @@ async function bootstrap() {
     }),
   );
 
-  // Enable Socket.io WebSocket adapter
   app.useWebSocketAdapter(new IoAdapter(app));
 
   const config = new DocumentBuilder()

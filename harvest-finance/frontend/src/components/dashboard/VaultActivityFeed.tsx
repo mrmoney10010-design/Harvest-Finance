@@ -1,48 +1,57 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { formatDistanceToNow } from "date-fns";
 import {
-  ArrowUpRight,
+  Activity,
   ArrowDownLeft,
-  Trophy,
+  ArrowUpRight,
   Sparkles,
+  Trophy,
   Wifi,
   WifiOff,
-  Activity,
-} from 'lucide-react';
-import { Card, CardBody } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { useVaultRealtime, VaultActivityEvent, VaultActivityType } from '@/hooks/useVaultRealtime';
-import { formatDistanceToNow } from 'date-fns';
+} from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
+import { Card, CardBody } from "@/components/ui/Card";
+import {
+  useVaultRealtime,
+  VaultActivityEvent,
+  VaultActivityType,
+} from "@/hooks/useVaultRealtime";
 
 const activityConfig: Record<
   VaultActivityType,
-  { icon: React.FC<{ className?: string }>; color: string; label: string; bgColor: string }
+  {
+    icon: React.FC<{ className?: string }>;
+    color: string;
+    label: string;
+    bgColor: string;
+  }
 > = {
   deposit: {
     icon: ArrowUpRight,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50',
-    label: 'Deposit',
+    color: "text-emerald-600",
+    bgColor: "bg-emerald-50",
+    label: "Deposit",
   },
   withdrawal: {
     icon: ArrowDownLeft,
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-50',
-    label: 'Withdrawal',
+    color: "text-amber-600",
+    bgColor: "bg-amber-50",
+    label: "Withdrawal",
   },
   milestone: {
     icon: Trophy,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    label: 'Milestone',
+    color: "text-purple-600",
+    bgColor: "bg-purple-50",
+    label: "Milestone",
   },
   ai_insight: {
     icon: Sparkles,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    label: 'AI Insight',
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+    label: "AI Insight",
   },
 };
 
@@ -55,43 +64,59 @@ function ActivityItem({ event }: { event: VaultActivityEvent }) {
       initial={{ opacity: 0, y: -12, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0"
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="flex items-start gap-3 border-b border-gray-100 py-3 last:border-0"
     >
-      <div className={`w-8 h-8 rounded-full ${config.bgColor} flex items-center justify-center flex-shrink-0`}>
-        <Icon className={`w-4 h-4 ${config.color}`} />
+      <div
+        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${config.bgColor}`}
+      >
+        <Icon className={`h-4 w-4 ${config.color}`} />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-gray-900 truncate">{event.vaultName}</p>
-          <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
-            {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
+          <p className="truncate text-sm font-semibold text-gray-900">
+            {event.vaultName}
+          </p>
+          <span className="flex-shrink-0 whitespace-nowrap text-xs text-gray-400">
+            {formatDistanceToNow(new Date(event.timestamp), {
+              addSuffix: true,
+            })}
           </span>
         </div>
-        <p className="text-xs text-gray-500 mt-0.5">
-          {event.type === 'deposit' && event.amount !== undefined && (
+        <p className="mt-0.5 text-xs text-gray-500">
+          {event.type === "deposit" && event.amount !== undefined && (
             <span>
-              <span className="font-medium text-emerald-600">+${event.amount.toLocaleString()}</span>
+              <span className="font-medium text-emerald-600">
+                +${event.amount.toLocaleString()}
+              </span>
               {event.newBalance !== undefined && (
-                <span className="text-gray-400"> · Balance: ${event.newBalance.toLocaleString()}</span>
+                <span className="text-gray-400">
+                  {" "}
+                  - Balance: ${event.newBalance.toLocaleString()}
+                </span>
               )}
             </span>
           )}
-          {event.type === 'withdrawal' && event.amount !== undefined && (
+          {event.type === "withdrawal" && event.amount !== undefined && (
             <span>
-              <span className="font-medium text-amber-600">-${event.amount.toLocaleString()}</span>
+              <span className="font-medium text-amber-600">
+                -${event.amount.toLocaleString()}
+              </span>
               {event.newBalance !== undefined && (
-                <span className="text-gray-400"> · Balance: ${event.newBalance.toLocaleString()}</span>
+                <span className="text-gray-400">
+                  {" "}
+                  - Balance: ${event.newBalance.toLocaleString()}
+                </span>
               )}
             </span>
           )}
-          {event.type === 'milestone' && event.milestone}
-          {event.type === 'ai_insight' && event.insight}
+          {event.type === "milestone" && event.milestone}
+          {event.type === "ai_insight" && event.insight}
         </p>
       </div>
       <Badge
-        variant="outline"
-        className={`text-xs flex-shrink-0 ${config.color} border-current`}
+        variant="default"
+        className={`flex-shrink-0 border border-current bg-transparent text-xs ${config.color}`}
       >
         {config.label}
       </Badge>
@@ -100,23 +125,27 @@ function ActivityItem({ event }: { event: VaultActivityEvent }) {
 }
 
 export function VaultActivityFeed() {
-  const { isConnected, activities, clearActivities } = useVaultRealtime({ maxActivityItems: 15 });
+  const { isConnected, activities, clearActivities } = useVaultRealtime({
+    maxActivityItems: 15,
+  });
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-            <Activity className="w-5 h-5 text-harvest-green-600" />
+          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight text-gray-900">
+            <Activity className="h-5 w-5 text-harvest-green-600" />
             Live Vault Activity
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5">Real-time updates from all vault actions.</p>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Real-time updates from all vault actions.
+          </p>
         </div>
         <div className="flex items-center gap-3">
           {activities.length > 0 && (
             <button
               onClick={clearActivities}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-xs text-gray-400 transition-colors hover:text-gray-600"
             >
               Clear
             </button>
@@ -127,17 +156,17 @@ export function VaultActivityFeed() {
                 <motion.div
                   animate={{ scale: [1, 1.3, 1] }}
                   transition={{ repeat: Infinity, duration: 2 }}
-                  className="w-2 h-2 rounded-full bg-emerald-500"
+                  className="h-2 w-2 rounded-full bg-emerald-500"
                 />
-                <span className="text-xs font-medium text-emerald-600 flex items-center gap-1">
-                  <Wifi className="w-3 h-3" /> Live
+                <span className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+                  <Wifi className="h-3 w-3" /> Live
                 </span>
               </>
             ) : (
               <>
-                <div className="w-2 h-2 rounded-full bg-gray-300" />
-                <span className="text-xs font-medium text-gray-400 flex items-center gap-1">
-                  <WifiOff className="w-3 h-3" /> Offline
+                <div className="h-2 w-2 rounded-full bg-gray-300" />
+                <span className="flex items-center gap-1 text-xs font-medium text-gray-400">
+                  <WifiOff className="h-3 w-3" /> Offline
                 </span>
               </>
             )}
@@ -149,20 +178,26 @@ export function VaultActivityFeed() {
         <CardBody className="p-4">
           {activities.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                <Activity className="w-6 h-6 text-gray-300" />
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                <Activity className="h-6 w-6 text-gray-300" />
               </div>
               <p className="text-sm font-medium text-gray-500">
-                {isConnected ? 'Listening for vault activity…' : 'Connecting to live feed…'}
+                {isConnected
+                  ? "Listening for vault activity..."
+                  : "Connecting to live feed..."}
               </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Updates appear here instantly when deposits, withdrawals, or milestones occur.
+              <p className="mt-1 text-xs text-gray-400">
+                Updates appear here instantly when deposits, withdrawals, or
+                milestones occur.
               </p>
             </div>
           ) : (
             <AnimatePresence initial={false}>
-              {activities.map((event, i) => (
-                <ActivityItem key={`${event.vaultId}-${event.timestamp}-${i}`} event={event} />
+              {activities.map((event, index) => (
+                <ActivityItem
+                  key={`${event.vaultId}-${event.timestamp}-${index}`}
+                  event={event}
+                />
               ))}
             </AnimatePresence>
           )}

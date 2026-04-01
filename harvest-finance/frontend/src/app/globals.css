@@ -13,7 +13,7 @@
   --color-harvest-green-700: #15803d;
   --color-harvest-green-800: #166534;
   --color-harvest-green-900: #14532d;
-  
+
   /* Semantic Colors */
   --color-success-light: #dcfce7;
   --color-warning-light: #fef3c7;
@@ -42,7 +42,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -148,7 +152,11 @@ input {
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--brand) 0%,
+      var(--brand-strong) 100%
+    );
     @apply inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-green-900/15;
   }
 
@@ -215,7 +223,10 @@ input {
   }
 
   .auth-panel {
-    @apply surface-card relative overflow-hidden p-6 sm:p-8 lg:p-10;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    @apply relative overflow-hidden rounded-[28px] p-6 backdrop-blur-sm sm:p-8 lg:p-10;
   }
 
   .auth-grid {
@@ -244,7 +255,10 @@ input {
   }
 
   .top-nav {
-    @apply surface-card mb-6 flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    @apply mb-6 flex flex-col gap-4 rounded-[28px] px-5 py-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between;
   }
 
   .nav-links {
@@ -266,7 +280,11 @@ input {
 
   .metric-card {
     @apply rounded-[24px] border p-5;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 240, 0.88));
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.98),
+      rgba(244, 248, 240, 0.88)
+    );
     border-color: rgba(47, 122, 66, 0.12);
   }
 
@@ -276,7 +294,11 @@ input {
 
   .chart-bar {
     @apply flex-1 rounded-t-2xl;
-    background: linear-gradient(180deg, rgba(141, 187, 85, 0.95), rgba(47, 122, 66, 0.95));
+    background: linear-gradient(
+      180deg,
+      rgba(141, 187, 85, 0.95),
+      rgba(47, 122, 66, 0.95)
+    );
   }
 
   .muted-divider {
