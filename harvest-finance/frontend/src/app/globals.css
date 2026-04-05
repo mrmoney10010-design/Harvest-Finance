@@ -215,7 +215,10 @@ input {
   }
 
   .auth-panel {
-    @apply surface-card relative overflow-hidden p-6 sm:p-8 lg:p-10;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    @apply relative overflow-hidden rounded-[28px] backdrop-blur-sm p-6 sm:p-8 lg:p-10;
   }
 
   .auth-grid {
@@ -244,7 +247,10 @@ input {
   }
 
   .top-nav {
-    @apply surface-card mb-6 flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    @apply mb-6 flex flex-col gap-4 rounded-[28px] backdrop-blur-sm px-5 py-4 sm:flex-row sm:items-center sm:justify-between;
   }
 
   .nav-links {
