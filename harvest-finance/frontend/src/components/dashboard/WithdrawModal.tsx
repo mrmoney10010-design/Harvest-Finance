@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Modal,
   ModalHeader,
@@ -31,6 +32,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   vault,
   onSuccess,
 }) => {
+  const { t } = useTranslation();
   const { token } = useAuthStore();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -38,12 +40,12 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   const handleWithdraw = async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      setError("Please enter a valid amount");
+      setError(t('modals.valid_amount_error'));
       return;
     }
 
     if (Number(amount) > (Number(vault?.balance) || 0)) {
-      setError("Insufficient balance in vault");
+      setError(t('modals.insufficient_balance'));
       return;
     }
 
@@ -84,18 +86,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <ModalHeader title="Withdraw Funds" onClose={onClose} />
+      <ModalHeader title={t('modals.withdraw_title')} onClose={onClose} />
       <ModalBody>
         <Stack gap="lg">
           <div className="flex items-center justify-between rounded-xl border border-red-100 bg-red-50 p-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-red-700">
-                From Vault
+                {t('modals.from_vault')}
               </p>
               <h4 className="font-bold text-gray-900">{vault?.name}</h4>
             </div>
             <Badge variant="error">
-              {vault?.projections?.progressPercentage ?? 0}% Season
+              {t('modals.season_progress', { progress: vault?.projections?.progressPercentage ?? 0 })}
             </Badge>
           </div>
 
@@ -109,7 +111,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           )}
 
           <Input
-            label="Amount (USD)"
+            label={t('modals.amount_label')}
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -121,13 +123,12 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
           <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm text-gray-500">
             <p className="mb-1 flex justify-between">
-              <span>Available Balance:</span>
+              <span>{t('modals.available_balance')}:</span>
               <span className="font-bold text-gray-900">${vault?.balance ?? '0.00'}</span>
             </p>
 
             <p className="mt-2 text-xs text-gray-500">
-              Offline withdrawals will stay queued locally until the platform
-              reconnects.
+              {t('modals.offline_note')}
             </p>
           </div>
 
@@ -135,8 +136,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
             <div className="flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50 p-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
               <p className="text-xs leading-relaxed text-amber-800">
-                <strong>Attention:</strong> Your crop cycle is not yet complete.
-                Early withdrawal may result in reduced seasonal dividends.
+                {t('modals.early_withdrawal_warning')}
               </p>
             </div>
           )}
@@ -144,7 +144,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       </ModalBody>
       <ModalFooter>
         <Button variant="ghost" onClick={onClose} isDisabled={isLoading}>
-          Cancel
+          {t('modals.cancel')}
         </Button>
         <Button
           variant="danger"
@@ -152,7 +152,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           isLoading={isLoading}
           leftIcon={<ArrowDownLeft className="w-4 h-4" />}
         >
-          Confirm Withdrawal
+          {t('modals.confirm_withdraw')}
         </Button>
       </ModalFooter>
     </Modal>

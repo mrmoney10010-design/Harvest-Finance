@@ -2,6 +2,7 @@
 
 import { Badge, Button, Card, CardBody } from "@/components/ui";
 import { CloudOff, RefreshCcw, Wifi } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ConnectivityBannerProps {
   isOnline: boolean;
@@ -18,6 +19,7 @@ export function ConnectivityBanner({
   isSyncing,
   onSync,
 }: ConnectivityBannerProps) {
+  const { t } = useTranslation();
   return (
     <Card
       variant="outlined"
@@ -46,15 +48,15 @@ export function ConnectivityBanner({
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
                 {isOnline
-                  ? "Online and syncing normally"
-                  : "Offline mode is active"}
+                  ? t('dashboard.refresh_sync')
+                  : t('common.pending_sync')}
               </h2>
               <Badge
                 variant={queuedActions > 0 ? "warning" : "success"}
                 size="sm"
                 isPill
               >
-                {queuedActions} queued action{queuedActions === 1 ? "" : "s"}
+                {queuedActions} {t('common.pending_sync')}
               </Badge>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -78,7 +80,7 @@ export function ConnectivityBanner({
           leftIcon={<RefreshCcw className="h-4 w-4" />}
           isDisabled={!isOnline || queuedActions === 0}
         >
-          Sync queued actions
+          {t('dashboard.refresh_sync')}
         </Button>
       </CardBody>
     </Card>

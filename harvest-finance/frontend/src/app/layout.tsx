@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { I18nInitializer } from "@/components/layout/I18nInitializer";
 import { MilestoneToastContainer } from "@/components/dashboard/MilestoneToast";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ServiceWorkerRegistration } from "@/components/layout/ServiceWorkerRegistration";
@@ -60,6 +61,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <I18nInitializer />
         <ThemeProvider>
           <ServiceWorkerRegistration />
           <a href="#main-content" className="skip-link">

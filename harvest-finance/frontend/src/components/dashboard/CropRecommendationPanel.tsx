@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Badge,
   Button,
@@ -38,6 +39,7 @@ const seasons = [
 export function CropRecommendationPanel({
   isOnline,
 }: CropRecommendationPanelProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     location: "Kaduna",
     season: "Rainy season",
@@ -94,18 +96,18 @@ export function CropRecommendationPanel({
   return (
     <Card variant="default" className="overflow-hidden">
       <CardHeader
-        title="AI Crop Recommendation"
-        subtitle="Request practical crop ideas based on region, season, soil, and your own preferences."
+        title={t('dashboard.assistant_title')}
+        subtitle={t('dashboard.assistant_subtitle')}
         action={
           <Badge variant={isOnline ? "success" : "warning"} size="sm" isPill>
-            {isOnline ? "Live AI ready" : "Offline cache only"}
+            {isOnline ? t('common.success') : t('common.cached')}
           </Badge>
         }
       />
       <CardBody className="space-y-6 p-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <Input
-            label="Location"
+            label={t('common.name')}
             value={form.location}
             onChange={(event) => updateField("location", event.target.value)}
             leftIcon={<MapPin className="h-4 w-4" />}
@@ -113,7 +115,7 @@ export function CropRecommendationPanel({
           />
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700">
-              Season
+              {t('dashboard.season_label')}
             </label>
             <select
               className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition focus:border-harvest-green-500 focus:ring-2 focus:ring-harvest-green-200"
@@ -128,7 +130,7 @@ export function CropRecommendationPanel({
             </select>
           </div>
           <Input
-            label="Preferred Crop"
+            label={t('dashboard.crop_label')}
             value={form.preferredCrop}
             onChange={(event) =>
               updateField("preferredCrop", event.target.value)
@@ -163,7 +165,7 @@ export function CropRecommendationPanel({
             isLoading={isLoading}
             leftIcon={<Bot className="h-4 w-4" />}
           >
-            Get crop ideas
+            {t('dashboard.refresh')}
           </Button>
         </div>
 

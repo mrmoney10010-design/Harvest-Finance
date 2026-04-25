@@ -22,6 +22,7 @@ import {
   Leaf, 
   Shield 
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Vault } from '@/types/vault';
 import { 
   sortVaults, 
@@ -43,6 +44,7 @@ export const VaultTable: React.FC<VaultTableProps> = ({
   onDeposit,
   onWithdraw,
 }) => {
+  const { t } = useTranslation();
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({
     key: 'tvl',
     direction: 'desc',
@@ -91,7 +93,7 @@ export const VaultTable: React.FC<VaultTableProps> = ({
               onClick={() => handleSort('name')}
             >
               <Inline gap="none" align="center">
-                <span>Vault Name</span>
+                <span>{t('dashboard.vault_name')}</span>
                 {renderSortIcon('name')}
               </Inline>
             </TableHead>
@@ -100,7 +102,7 @@ export const VaultTable: React.FC<VaultTableProps> = ({
               onClick={() => handleSort('apy')}
             >
               <Inline gap="none" align="center">
-                <span>APY</span>
+                <span>{t('dashboard.apy')}</span>
                 {renderSortIcon('apy')}
               </Inline>
             </TableHead>
@@ -109,7 +111,7 @@ export const VaultTable: React.FC<VaultTableProps> = ({
               onClick={() => handleSort('tvl')}
             >
               <Inline gap="none" align="center">
-                <span>TVL</span>
+                <span>{t('dashboard.tvl')}</span>
                 {renderSortIcon('tvl')}
               </Inline>
             </TableHead>
@@ -118,12 +120,12 @@ export const VaultTable: React.FC<VaultTableProps> = ({
               onClick={() => handleSort('riskLevel')}
             >
               <Inline gap="none" align="center">
-                <span>Risk Level</span>
+                <span>{t('dashboard.risk_level')}</span>
                 {renderSortIcon('riskLevel')}
               </Inline>
             </TableHead>
-            <TableHead>Strategy</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t('dashboard.strategy')}</TableHead>
+            <TableHead className="text-right">{t('dashboard.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -164,7 +166,7 @@ export const VaultTable: React.FC<VaultTableProps> = ({
                     onClick={() => onDeposit(vault.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity bg-harvest-green-600 hover:bg-harvest-green-700 text-white h-8"
                   >
-                    Deposit
+                    {t('common.deposit')}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -172,7 +174,7 @@ export const VaultTable: React.FC<VaultTableProps> = ({
                     onClick={() => onWithdraw(vault.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity border-gray-200 dark:border-[rgba(141,187,85,0.25)] text-gray-700 dark:text-gray-200 h-8"
                   >
-                    Withdraw
+                    {t('common.withdraw')}
                   </Button>
                 </div>
               </TableCell>
@@ -181,8 +183,8 @@ export const VaultTable: React.FC<VaultTableProps> = ({
           ))}
           {sortedVaults.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center text-gray-500 dark:text-gray-400">
-                No vaults found.
+              <TableCell colSpan={6} className="h-24 text-center text-gray-500 dark:text-gray-400">
+                {t('dashboard.no_vaults_found')}
               </TableCell>
             </TableRow>
           )}

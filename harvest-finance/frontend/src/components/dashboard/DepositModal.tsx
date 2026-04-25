@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Badge,
   Button,
@@ -46,6 +46,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   onSuccess,
   onDepositSuccess,
 }) => {
+  const { t } = useTranslation();
   const { token } = useAuthStore();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -99,18 +100,18 @@ export const DepositModal: React.FC<DepositModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <ModalHeader title="Deposit Funds" onClose={onClose} />
+      <ModalHeader title={t('modals.deposit_title')} onClose={onClose} />
       <ModalBody>
         <Stack gap="lg">
           <div className="flex items-center justify-between rounded-xl border border-harvest-green-100 bg-harvest-green-50 p-4">
             <div>
               <p className="text-xs font-semibold text-harvest-green-700 uppercase tracking-wider">
-                Active Vault
+                {t('modals.active_vault')}
               </p>
               <h4 className="font-bold text-gray-900">{vault?.name}</h4>
             </div>
             <Badge variant="success">
-              APY: {vault?.apy ?? vault?.cropCycle?.yieldRate ?? 0}%
+              {t('common.apy')}: {vault?.apy ?? vault?.cropCycle?.yieldRate ?? 0}%
             </Badge>
 
           </div>
@@ -125,7 +126,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
           )}
 
           <Input
-            label="Amount (USD)"
+            label={t('modals.amount_label')}
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -137,13 +138,13 @@ export const DepositModal: React.FC<DepositModalProps> = ({
 
           <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm text-gray-500">
             <p className="mb-1 flex justify-between">
-              <span>Current Balance:</span>
+              <span>{t('modals.current_balance')}:</span>
               <span className="font-bold text-gray-900">
                 ${vault?.balance ?? 0}
               </span>
             </p>
             <p className="flex justify-between">
-              <span>Estimated Seasonal Yield:</span>
+              <span>{t('modals.est_yield')}:</span>
               <span className="font-bold text-harvest-green-600">
                 +$
                 {(
@@ -154,15 +155,14 @@ export const DepositModal: React.FC<DepositModalProps> = ({
 
             </p>
             <p className="mt-2 text-xs text-gray-500">
-              Offline deposits will be queued automatically and synced when your
-              connection returns.
+              {t('modals.offline_note')}
             </p>
           </div>
         </Stack>
       </ModalBody>
       <ModalFooter>
         <Button variant="ghost" onClick={onClose} isDisabled={isLoading}>
-          Cancel
+          {t('modals.cancel')}
         </Button>
         <Button
           variant="primary"
@@ -170,7 +170,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
           isLoading={isLoading}
           leftIcon={<ArrowUpRight className="w-4 h-4" />}
         >
-          Confirm Deposit
+          {t('modals.confirm_deposit')}
         </Button>
       </ModalFooter>
     </Modal>
