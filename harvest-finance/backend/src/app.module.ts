@@ -28,7 +28,8 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { SorobanModule } from './soroban/soroban.module';
 import { StellarModule } from './stellar/stellar.module';
 import { VerificationModule } from './verification/verification.module';
-import { YieldAnalyticsModule } from './yield-analytics/yield-analytics.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { StateSyncModule } from './state-sync/state-sync.module';
 import {
   Achievement,
   CreditScore,
@@ -133,7 +134,8 @@ import { CreateYieldAnalytics1700000000012 } from './database/migrations/1700000
     StellarModule,
     SorobanModule,
     PortfolioModule,
-    YieldAnalyticsModule,
+    AnalyticsModule,
+    StateSyncModule,
   ],
   controllers: [AppController],
   providers: [
