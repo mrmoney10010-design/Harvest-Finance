@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Container, Section, Button, Inline, Stack, cn } from "@/components/ui";
 import { DepositModal } from "@/components/dashboard/DepositModal";
 import { MilestoneConfetti } from "@/components/dashboard/MilestoneConfetti";
@@ -119,6 +120,7 @@ function VaultWithProgress({
 }
 
 export default function VaultsPage() {
+  const { t } = useTranslation();
   const [selectedVault, setSelectedVault] = useState<Vault | null>(null);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -210,11 +212,10 @@ export default function VaultsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
               <div className="max-w-2xl">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  Smart Farm Vaults
+                  {t('vaults.title')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Deposit your assets into automated yield-generating strategies.
-                  Track your seasonal progress and hit milestones.
+                  {t('vaults.subtitle')}
                 </p>
               </div>
               
@@ -229,7 +230,7 @@ export default function VaultsPage() {
                   )}
                 >
                   <LayoutGrid className="w-4 h-4" />
-                  <span>Grid</span>
+                  <span>{t('vaults.grid')}</span>
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
@@ -241,7 +242,7 @@ export default function VaultsPage() {
                   )}
                 >
                   <List className="w-4 h-4" />
-                  <span>List</span>
+                  <span>{t('vaults.list')}</span>
                 </button>
               </div>
             </div>

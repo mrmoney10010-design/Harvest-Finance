@@ -6,26 +6,22 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "./interfaces/IVault.sol";
+import "./libraries/VaultLib.sol";
 
 /**
  * @title Vault
- * @dev A secure ERC4626-like vault for depositing and withdrawing tokens
- * with share-based accounting, role-based access control, reentrancy
- * protection, emergency pause, and comprehensive input validation.
- *
- * Security improvements over the original:
- *  1. SafeERC20 — handles non-standard ERC20 tokens that don't return bool
- *  2. Role-based access control (RBAC) — ADMIN_ROLE and PAUSER_ROLE
- *  3. Emergency pause (circuit-breaker) — pausable deposit/withdraw/redeem
- *  4. Reentrancy guard — nonReentrant on all state-changing functions
- *  5. Checks-Effects-Interactions pattern — state updated before external calls
- *  6. Input validation — zero-address, zero-amount, and solvency guards
- *  7. emergencyWithdraw protection — cannot drain the underlying vault asset
- *  8. Event logging — rich events for all sensitive operations
+ * @dev ERC4626-like vault implementing IVault. Share/asset math is
+ * delegated to VaultLib for modularity and reusability.
  */
-contract Vault is ERC20, AccessControl, ReentrancyGuard, Pausable {
-    using SafeERC20 for IERC20;
+contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
+    using VaultLib for uint256;
+    IERC20 public asset;
+    
+    uint256 public totalAssets_;
+    
+    event Deposit(address indexed caller, address indexed owner, uint256 assets, uint256 shares);
+    event Withdraw(address indexed caller, address indexed receiver, uint256 assets, uint256 shares);
 
     // =========================================================
     // Roles
@@ -226,28 +222,14 @@ contract Vault is ERC20, AccessControl, ReentrancyGuard, Pausable {
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
-    // =========================================================
-    // Conversion helpers (view)
-    // =========================================================
-
-    /**
-     * @notice Convert an asset amount to vault shares using current exchange rate.
-     * @dev    When the vault is empty the ratio is 1 : 1.
-     */
+    /// @inheritdoc IVault
     function convertToShares(uint256 assets) public view returns (uint256) {
-        uint256 supply = totalSupply();
-        if (supply == 0) return assets;
-        return (assets * supply) / _totalAssets;
+        return VaultLib.toShares(assets, totalSupply(), totalAssets_);
     }
 
-    /**
-     * @notice Convert a share amount to the underlying asset value.
-     * @dev    When the vault is empty the ratio is 1 : 1.
-     */
+    /// @inheritdoc IVault
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        uint256 supply = totalSupply();
-        if (supply == 0) return shares;
-        return (shares * _totalAssets) / supply;
+        return VaultLib.toAssets(shares, totalSupply(), totalAssets_);
     }
 
     // =========================================================

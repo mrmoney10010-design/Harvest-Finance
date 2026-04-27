@@ -18,6 +18,7 @@ import {
   Info
 } from 'lucide-react';
 import { Badge, Button, Card, CardBody } from '@/components/ui';
+import { useTranslation } from 'react-i18next';
 import { useOfflineData } from '@/hooks/useOfflineData';
 import { db, AIRecommendation } from '@/lib/db';
 
@@ -54,6 +55,7 @@ export function AIInsightsPanel({
   showFilters = true,
   onRecommendationClick,
 }: AIInsightsPanelProps) {
+  const { t } = useTranslation();
   const { recommendations } = useOfflineData();
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [displayedRecs, setDisplayedRecs] = useState<AIRecommendation[]>([]);
@@ -120,7 +122,7 @@ export function AIInsightsPanel({
               <BrainCircuit className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">AI Insights</h2>
+              <h2 className="font-semibold text-gray-900">{t('dashboard.assistant_title')}</h2>
               <p className="text-xs text-gray-500">
                 {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''} available
               </p>
@@ -131,7 +133,7 @@ export function AIInsightsPanel({
             {!isOnline && (
               <Badge variant="warning" size="sm" isPill>
                 <WifiOff className="h-3 w-3 mr-1" />
-                Offline
+                {t('common.cached')}
               </Badge>
             )}
             {isOnline && (
@@ -238,7 +240,7 @@ export function AIInsightsPanel({
             onClick={() => setShowAll(!showAll)}
             rightIcon={showAll ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           >
-            {showAll ? 'Show less' : `View all ${recommendations.length} insights`}
+            {showAll ? t('common.pending_sync') : t('common.success')}
           </Button>
         </div>
       )}
