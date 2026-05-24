@@ -21,26 +21,39 @@ export class QuerySorobanEventsDto {
   @Length(1, 128)
   contractId?: string;
 
-  @ApiPropertyOptional({ enum: SorobanEventType, description: 'Filter by event type' })
+  @ApiPropertyOptional({
+    enum: SorobanEventType,
+    description: 'Filter by event type',
+  })
   @IsOptional()
   @IsEnum(SorobanEventType)
   type?: SorobanEventType;
 
-  @ApiPropertyOptional({ description: 'Minimum ledger sequence (inclusive)', example: 100000 })
+  @ApiPropertyOptional({
+    description: 'Minimum ledger sequence (inclusive)',
+    example: 100000,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   fromLedger?: number;
 
-  @ApiPropertyOptional({ description: 'Maximum ledger sequence (inclusive)', example: 200000 })
+  @ApiPropertyOptional({
+    description: 'Maximum ledger sequence (inclusive)',
+    example: 200000,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   toLedger?: number;
 
-  @ApiPropertyOptional({ description: 'Number of records to skip', example: 0, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Number of records to skip',
+    example: 0,
+    default: 0,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -93,15 +106,30 @@ export class IndexerStatusDto {
   @ApiProperty({ example: true, description: 'Whether the indexer is enabled' })
   enabled: boolean;
 
-  @ApiProperty({ example: 'https://soroban-testnet.stellar.org', description: 'Soroban RPC URL' })
+  @ApiProperty({
+    example: 'https://soroban-testnet.stellar.org',
+    description: 'Soroban RPC URL',
+  })
   rpcUrl: string;
 
-  @ApiProperty({ example: 123456, nullable: true, description: 'Last ledger sequence indexed' })
+  @ApiProperty({
+    example: 123456,
+    nullable: true,
+    description: 'Last ledger sequence indexed',
+  })
   lastLedger: number | null;
 
-  @ApiProperty({ example: 123456, nullable: true, description: 'Total events indexed' })
+  @ApiProperty({
+    example: 123456,
+    nullable: true,
+    description: 'Total events indexed',
+  })
   totalEvents: number;
 
-  @ApiProperty({ example: '2026-04-24T12:00:00.000Z', nullable: true, description: 'Last successful poll timestamp' })
+  @ApiProperty({
+    example: '2026-04-24T12:00:00.000Z',
+    nullable: true,
+    description: 'Last successful poll timestamp',
+  })
   lastPolledAt: string | null;
 }

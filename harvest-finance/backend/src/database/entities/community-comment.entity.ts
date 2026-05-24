@@ -42,7 +42,9 @@ export class CommunityComment {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @ManyToOne(() => CommunityPost, (post) => post.comments, { onDelete: 'CASCADE' })
+  @ManyToOne(() => CommunityPost, (post) => post.comments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'post_id' })
   post: CommunityPost;
 

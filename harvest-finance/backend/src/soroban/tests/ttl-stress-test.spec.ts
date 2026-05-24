@@ -19,7 +19,11 @@ describe('TTL Stress Test (Archival Simulation)', () => {
         { provide: SorobanIndexerService, useValue: mockIndexer },
         {
           provide: ConfigService,
-          useValue: { get: jest.fn((key) => (key === 'SOROBAN_RPC_URL' ? 'http://localhost' : null)) },
+          useValue: {
+            get: jest.fn((key) =>
+              key === 'SOROBAN_RPC_URL' ? 'http://localhost' : null,
+            ),
+          },
         },
       ],
     }).compile();
@@ -39,11 +43,11 @@ describe('TTL Stress Test (Archival Simulation)', () => {
     });
 
     const loggerSpy = jest.spyOn((service as any).logger, 'warn');
-    
+
     await service.ensureStoragePersistence(contractId);
 
     expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('TTL below threshold')
+      expect.stringContaining('TTL below threshold'),
     );
   });
 
@@ -58,36 +62,38 @@ describe('TTL Stress Test (Archival Simulation)', () => {
     });
 
     const loggerSpy = jest.spyOn((service as any).logger, 'log');
-    
+
     await service.ensureStoragePersistence(contractId);
 
     expect(loggerSpy).toHaveBeenCalledWith('TTL is sufficient.');
   });
-  
+
   it('should simulate long-term inactivity by advancing current ledger', async () => {
     const contractId = 'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     let currentLedger = 100000;
     const liveUntil = 105000; // Initially safe
 
     mockIndexer.getLedgerEntries.mockResolvedValue({
-        entries: [{ liveUntilLedger: liveUntil }],
+      entries: [{ liveUntilLedger: liveUntil }],
     });
 
     // Case 1: Inactivity period 1 (Safe)
     mockIndexer.getLatestLedger.mockResolvedValue(currentLedger);
     await service.ensureStoragePersistence(contractId);
-    
+
     // Case 2: Inactivity period 2 (Still safe)
     currentLedger = 103000;
     mockIndexer.getLatestLedger.mockResolvedValue(currentLedger);
     await service.ensureStoragePersistence(contractId);
-    
+
     // Case 3: Long inactivity (Now needs extension)
     currentLedger = 104500; // TTL = 500
     mockIndexer.getLatestLedger.mockResolvedValue(currentLedger);
     const loggerSpy = jest.spyOn((service as any).logger, 'warn');
-    
+
     await service.ensureStoragePersistence(contractId);
-    expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Extending'));
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Extending'),
+    );
   });
 });

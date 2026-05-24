@@ -55,7 +55,10 @@ export class PortfolioController {
     description: 'Aggregated portfolio',
     type: PortfolioResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing token',
+  })
   async getPortfolio(
     @Request() req: any,
     @Query('addresses') addresses?: string,
@@ -70,9 +73,10 @@ export class PortfolioController {
   @Post('aggregate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Aggregate a portfolio across an explicit list of Stellar accounts',
+    summary:
+      'Aggregate a portfolio across an explicit list of Stellar accounts',
     description:
-      "Same as GET /portfolio but accepts a validated JSON body listing the Stellar public keys to aggregate. " +
+      'Same as GET /portfolio but accepts a validated JSON body listing the Stellar public keys to aggregate. ' +
       'Useful for clients holding custody across many accounts.',
   })
   @ApiBody({ type: AggregatePortfolioDto })
@@ -82,11 +86,17 @@ export class PortfolioController {
     type: PortfolioResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Validation failed' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing token',
+  })
   async aggregatePortfolio(
     @Request() req: any,
     @Body() dto: AggregatePortfolioDto,
   ): Promise<PortfolioResponseDto> {
-    return this.portfolioService.buildPortfolio(req.user.id, dto.stellarAddresses);
+    return this.portfolioService.buildPortfolio(
+      req.user.id,
+      dto.stellarAddresses,
+    );
   }
 }

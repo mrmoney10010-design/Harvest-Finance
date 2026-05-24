@@ -1,4 +1,8 @@
-import { ValidationPipe, VERSION_NEUTRAL, VersioningType } from '@nestjs/common';
+import {
+  ValidationPipe,
+  VERSION_NEUTRAL,
+  VersioningType,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { IoAdapter } from '@nestjs/platform-socket.io';
@@ -16,14 +20,14 @@ async function bootstrap() {
   });
   const customLogger = app.get(CustomLoggerService);
   app.useLogger(customLogger);
-  
+
   // Register the global filters, including the new Soroban filter
   app.useGlobalFilters(
     new HttpExceptionFilter(customLogger),
     new ThrottlerExceptionFilter(),
     new SorobanExceptionFilter(),
   );
-  
+
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -78,13 +82,22 @@ async function bootstrap() {
     )
     .addTag('Authentication', 'Authentication endpoints')
     .addTag('Vaults', 'Vault deposits, withdrawals and lookups')
-    .addTag('Portfolio', 'Aggregated balance reporting across Stellar accounts and vaults')
-    .addTag('Stellar', 'Stellar account, escrow and paginated transaction history endpoints')
+    .addTag(
+      'Portfolio',
+      'Aggregated balance reporting across Stellar accounts and vaults',
+    )
+    .addTag(
+      'Stellar',
+      'Stellar account, escrow and paginated transaction history endpoints',
+    )
     .addTag('Soroban Events', 'Queryable Soroban ContractEvent index')
     .addTag('verifications', 'Delivery verification endpoints')
     .addTag('deliveries', 'Delivery management endpoints')
     .addTag('orders', 'Order management endpoints')
-    .addTag('Multi-chain', 'Cross-chain yield aggregation across registered chain adapters')
+    .addTag(
+      'Multi-chain',
+      'Cross-chain yield aggregation across registered chain adapters',
+    )
     .addTag('health', 'Health check endpoints')
     .build();
   const document = SwaggerModule.createDocument(app, config);

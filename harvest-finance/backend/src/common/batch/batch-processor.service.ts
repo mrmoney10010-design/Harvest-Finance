@@ -46,14 +46,13 @@ export class BatchProcessorService {
 
       const batchResults = await Promise.allSettled(
         batch.map((req) =>
-          Promise.race([
-            req.operation(),
-            this.createTimeout(timeout),
-          ]).then((result) => ({
-            id: req.id,
-            result,
-            success: true,
-          })),
+          Promise.race([req.operation(), this.createTimeout(timeout)]).then(
+            (result) => ({
+              id: req.id,
+              result,
+              success: true,
+            }),
+          ),
         ),
       );
 
@@ -88,10 +87,7 @@ export class BatchProcessorService {
     let results = await this.processBatch(requests, options);
     let retryCount = 0;
 
-    while (
-      retryCount < maxRetries &&
-      results.some((r) => !r.success)
-    ) {
+    while (retryCount < maxRetries && results.some((r) => !r.success)) {
       const failedRequests = requests.filter(
         (req) => !results.find((r) => r.id === req.id && r.success),
       );
@@ -113,7 +109,10 @@ export class BatchProcessorService {
 
   private createTimeout(ms: number): Promise<never> {
     return new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`Batch operation timeout after ${ms}ms`)), ms),
+      setTimeout(
+        () => reject(new Error(`Batch operation timeout after ${ms}ms`)),
+        ms,
+      ),
     );
   }
 }

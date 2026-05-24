@@ -6,7 +6,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { YieldAnalyticsService } from './yield-analytics.service';
@@ -37,7 +42,9 @@ export class YieldAnalyticsController {
   })
   @ApiResponse({ status: 200, type: YieldAnalyticsPageDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getYieldAnalytics(@Query() query: QueryYieldAnalyticsDto): Promise<YieldAnalyticsPageDto> {
+  async getYieldAnalytics(
+    @Query() query: QueryYieldAnalyticsDto,
+  ): Promise<YieldAnalyticsPageDto> {
     const analytics = await this.yieldAnalyticsService.getYieldAnalytics(
       query.contractId || '',
       query.days || 30,
@@ -48,12 +55,12 @@ export class YieldAnalyticsController {
     const limit = query.limit || 50;
     const paginatedItems = analytics.slice(skip, skip + limit);
 
-    return {
-      items: paginatedItems,
-      total: analytics.length,
-      skip,
-      limit,
-    };
+return {
+       items: paginatedItems as any,
+       total: analytics.length,
+       skip,
+       limit,
+     };
   }
 
   @Get('current-apy')
@@ -92,12 +99,12 @@ export class YieldAnalyticsController {
     const limit = query.limit || 50;
     const paginatedItems = analytics.slice(skip, skip + limit);
 
-    return {
-      items: paginatedItems,
-      total: analytics.length,
-      skip,
-      limit,
-    };
+return {
+       items: paginatedItems as any,
+       total: analytics.length,
+       skip,
+       limit,
+     };
   }
 
   @Post('process-hardwork-events')

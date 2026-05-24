@@ -64,7 +64,8 @@ export class StellarAuthResponseDto {
     description: 'User information',
     example: {
       id: 'uuid-string',
-      stellar_address: 'GC5X3FML4S25HDAMJYZJYAC3CKLDWV2Z6YPV3IZXOSHSQKNSKUNQFXQN',
+      stellar_address:
+        'GC5X3FML4S25HDAMJYZJYAC3CKLDWV2Z6YPV3IZXOSHSQKNSKUNQFXQN',
       role: 'USER',
       full_name: 'Stellar User',
     },

@@ -36,7 +36,10 @@ export class PortfolioService {
     );
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (user?.stellarAddress && !uniqueAddresses.includes(user.stellarAddress)) {
+    if (
+      user?.stellarAddress &&
+      !uniqueAddresses.includes(user.stellarAddress)
+    ) {
       uniqueAddresses.push(user.stellarAddress);
     }
 
@@ -81,14 +84,15 @@ export class PortfolioService {
         publicKey,
         exists: false,
         balances: [],
-        error: err?.response?.status === 404 ? 'Account not found' : 'Account load failed',
+        error:
+          err?.response?.status === 404
+            ? 'Account not found'
+            : 'Account load failed',
       };
     }
   }
 
-  private aggregate(
-    accounts: StellarAccountSnapshotDto[],
-  ): AssetBalanceDto[] {
+  private aggregate(accounts: StellarAccountSnapshotDto[]): AssetBalanceDto[] {
     const totals = new Map<string, AssetBalanceDto>();
 
     for (const account of accounts) {
@@ -128,7 +132,9 @@ export class PortfolioService {
     }
 
     const vaultIds = rows.map((r) => r.vaultId);
-    const vaults = await this.vaultRepository.find({ where: { id: In(vaultIds) } });
+    const vaults = await this.vaultRepository.find({
+      where: { id: In(vaultIds) },
+    });
     const vaultMap = new Map(vaults.map((v) => [v.id, v]));
 
     let total = 0;

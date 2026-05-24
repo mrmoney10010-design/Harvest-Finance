@@ -37,7 +37,8 @@ export class CropAdvisoryService {
       recommendations.push({
         topic: 'irrigation',
         title: 'Adjust Irrigation for Rain',
-        advice: 'Current rainfall detected. Reduce scheduled irrigation to prevent soil waterlogging.',
+        advice:
+          'Current rainfall detected. Reduce scheduled irrigation to prevent soil waterlogging.',
         impact: 'Saves water and prevents root rot.',
         priority: 'high',
       });
@@ -45,7 +46,8 @@ export class CropAdvisoryService {
       recommendations.push({
         topic: 'irrigation',
         title: 'Increase Hydration',
-        advice: 'High temperatures detected. Increase irrigation frequency during early morning or late evening.',
+        advice:
+          'High temperatures detected. Increase irrigation frequency during early morning or late evening.',
         impact: 'Prevents heat stress and wilting.',
         priority: 'medium',
       });
@@ -54,10 +56,11 @@ export class CropAdvisoryService {
     // Vault/Crop based advice
     for (const vault of vaults) {
       const cropName = vault.cropCycle?.name || 'Crop';
-      
+
       // Simulated growth stage logic based on startDate
       const daysSinceStart = Math.floor(
-        (new Date().getTime() - new Date(vault.startDate).getTime()) / (1000 * 3600 * 24),
+        (new Date().getTime() - new Date(vault.startDate).getTime()) /
+          (1000 * 3600 * 24),
       );
 
       if (daysSinceStart < 15) {
@@ -79,7 +82,9 @@ export class CropAdvisoryService {
       }
 
       // Market-based advice
-      const marketMatch = marketInsights.find(m => m.crop.toLowerCase() === cropName.toLowerCase());
+      const marketMatch = marketInsights.find(
+        (m) => m.crop.toLowerCase() === cropName.toLowerCase(),
+      );
       if (marketMatch?.isHighDemand) {
         recommendations.push({
           topic: 'pest_management',
@@ -96,7 +101,8 @@ export class CropAdvisoryService {
       recommendations.push({
         topic: 'pest_management',
         title: 'Routine Monitoring',
-        advice: 'No urgent alerts. Maintain regular scouting for pests and soil moisture checks.',
+        advice:
+          'No urgent alerts. Maintain regular scouting for pests and soil moisture checks.',
         impact: 'Ensures long-term crop health.',
         priority: 'low',
       });
@@ -108,7 +114,10 @@ export class CropAdvisoryService {
       generatedAt: new Date().toISOString(),
       context: {
         weatherSummary: `${weather.current.condition}, ${weather.current.temperatureC}°C`,
-        marketTrend: marketInsights.length > 0 ? 'Prices are stabilizing' : 'Market data limited',
+        marketTrend:
+          marketInsights.length > 0
+            ? 'Prices are stabilizing'
+            : 'Market data limited',
         soilHealth: 'Optimal based on seasonal trends',
       },
     };

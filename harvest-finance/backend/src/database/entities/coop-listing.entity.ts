@@ -50,7 +50,11 @@ export class CoopListing {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'enum', enum: ListingCategory, default: ListingCategory.CROPS })
+  @Column({
+    type: 'enum',
+    enum: ListingCategory,
+    default: ListingCategory.CROPS,
+  })
   category: ListingCategory;
 
   @Column({ type: 'enum', enum: ListingStatus, default: ListingStatus.ACTIVE })
@@ -68,7 +72,11 @@ export class CoopListing {
   @Column({ default: 'kg' })
   unit: string;
 
-  @Column({ type: 'enum', enum: DeliveryOption, default: DeliveryOption.PICKUP_ONLY })
+  @Column({
+    type: 'enum',
+    enum: DeliveryOption,
+    default: DeliveryOption.PICKUP_ONLY,
+  })
   deliveryOption: DeliveryOption;
 
   @Column({ nullable: true })
@@ -77,7 +85,11 @@ export class CoopListing {
   @Column({ nullable: true, name: 'image_url' })
   imageUrl: string | null;
 
-  @Column({ name: 'expires_at', nullable: true, type: 'timestamp with time zone' })
+  @Column({
+    name: 'expires_at',
+    nullable: true,
+    type: 'timestamp with time zone',
+  })
   expiresAt: Date | null;
 
   @Column({ name: 'view_count', default: 0 })

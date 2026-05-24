@@ -12,7 +12,8 @@ import {
   AreaChart,
   Area,
   ComposedChart,
-  Bar
+  Bar,
+  BarChart
 } from 'recharts';
 import { Card, CardHeader, CardBody, Tooltip } from '@/components/ui';
 import { format } from 'date-fns';

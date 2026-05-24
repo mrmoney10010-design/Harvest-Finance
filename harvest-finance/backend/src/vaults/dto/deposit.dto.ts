@@ -18,7 +18,7 @@ export class DepositDto {
   userId: string;
 
   @ApiProperty({
-    example: 1000.50,
+    example: 1000.5,
     description: 'Deposit amount (must be greater than 0)',
     minimum: 0.01,
   })

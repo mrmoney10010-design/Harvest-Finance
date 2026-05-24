@@ -40,7 +40,9 @@ export class SorobanController {
   })
   @ApiResponse({ status: 200, type: SorobanEventPageDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async list(@Query() query: QuerySorobanEventsDto): Promise<SorobanEventPageDto> {
+  async list(
+    @Query() query: QuerySorobanEventsDto,
+  ): Promise<SorobanEventPageDto> {
     return this.indexer.query(query);
   }
 

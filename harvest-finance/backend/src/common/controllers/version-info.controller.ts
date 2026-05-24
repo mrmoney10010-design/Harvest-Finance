@@ -23,7 +23,8 @@ export class VersionInfoController {
   @ApiOperation({ summary: 'Get API version information' })
   @ApiResponse({
     status: 200,
-    description: 'Version information including supported versions and deprecation status',
+    description:
+      'Version information including supported versions and deprecation status',
     schema: {
       example: {
         currentVersion: '1',

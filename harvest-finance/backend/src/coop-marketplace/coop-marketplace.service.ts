@@ -11,7 +11,10 @@ import {
   CoopListing,
   ListingStatus,
 } from '../database/entities/coop-listing.entity';
-import { CoopOrder, CoopOrderStatus } from '../database/entities/coop-order.entity';
+import {
+  CoopOrder,
+  CoopOrderStatus,
+} from '../database/entities/coop-order.entity';
 import { CoopReview } from '../database/entities/coop-review.entity';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { CreateCoopOrderDto } from './dto/create-order.dto';
@@ -29,7 +32,10 @@ export class CoopMarketplaceService {
 
   // ── Listings ───────────────────────────────────────────────────────────────
 
-  async createListing(sellerId: string, dto: CreateListingDto): Promise<CoopListing> {
+  async createListing(
+    sellerId: string,
+    dto: CreateListingDto,
+  ): Promise<CoopListing> {
     const listing = this.listingRepo.create({
       sellerId,
       title: dto.title,
@@ -46,17 +52,25 @@ export class CoopMarketplaceService {
     return this.listingRepo.save(listing);
   }
 
-  async getListings(query: QueryListingsDto): Promise<{ data: CoopListing[]; total: number; page: number }> {
+  async getListings(
+    query: QueryListingsDto,
+  ): Promise<{ data: CoopListing[]; total: number; page: number }> {
     const { page = 1, limit = 20, category, search, location, sort } = query;
 
     const qb = this.listingRepo
       .createQueryBuilder('l')
       .leftJoin('l.seller', 'seller')
-      .addSelect(['seller.id', 'seller.firstName', 'seller.lastName', 'seller.profileImageUrl'])
+      .addSelect([
+        'seller.id',
+        'seller.firstName',
+        'seller.lastName',
+        'seller.profileImageUrl',
+      ])
       .where('l.status = :status', { status: ListingStatus.ACTIVE });
 
     if (category) qb.andWhere('l.category = :category', { category });
-    if (location) qb.andWhere('l.location ILIKE :location', { location: `%${location}%` });
+    if (location)
+      qb.andWhere('l.location ILIKE :location', { location: `%${location}%` });
     if (search) {
       qb.andWhere('(l.title ILIKE :search OR l.description ILIKE :search)', {
         search: `%${search}%`,
@@ -64,9 +78,14 @@ export class CoopMarketplaceService {
     }
 
     switch (sort) {
-      case 'price_asc': qb.orderBy('l.price', 'ASC'); break;
-      case 'price_desc': qb.orderBy('l.price', 'DESC'); break;
-      default: qb.orderBy('l.createdAt', 'DESC');
+      case 'price_asc':
+        qb.orderBy('l.price', 'ASC');
+        break;
+      case 'price_desc':
+        qb.orderBy('l.price', 'DESC');
+        break;
+      default:
+        qb.orderBy('l.createdAt', 'DESC');
     }
 
     qb.skip((page - 1) * limit).take(limit);
@@ -101,13 +120,22 @@ export class CoopMarketplaceService {
 
   // ── Orders ─────────────────────────────────────────────────────────────────
 
-  async placeOrder(buyerId: string, dto: CreateCoopOrderDto): Promise<CoopOrder> {
-    const listing = await this.listingRepo.findOne({ where: { id: dto.listingId } });
+  async placeOrder(
+    buyerId: string,
+    dto: CreateCoopOrderDto,
+  ): Promise<CoopOrder> {
+    const listing = await this.listingRepo.findOne({
+      where: { id: dto.listingId },
+    });
     if (!listing) throw new NotFoundException('Listing not found');
-    if (listing.status !== ListingStatus.ACTIVE) throw new BadRequestException('Listing is no longer available');
-    if (listing.sellerId === buyerId) throw new ForbiddenException('Cannot buy your own listing');
+    if (listing.status !== ListingStatus.ACTIVE)
+      throw new BadRequestException('Listing is no longer available');
+    if (listing.sellerId === buyerId)
+      throw new ForbiddenException('Cannot buy your own listing');
     if (dto.quantity > listing.quantity) {
-      throw new BadRequestException(`Only ${listing.quantity} ${listing.unit} available`);
+      throw new BadRequestException(
+        `Only ${listing.quantity} ${listing.unit} available`,
+      );
     }
 
     const totalPrice = Number(listing.price) * dto.quantity;
@@ -126,7 +154,11 @@ export class CoopMarketplaceService {
 
       // reserve listing when fully purchased
       if (dto.quantity >= listing.quantity) {
-        await manager.update(CoopListing, { id: listing.id }, { status: ListingStatus.RESERVED });
+        await manager.update(
+          CoopListing,
+          { id: listing.id },
+          { status: ListingStatus.RESERVED },
+        );
       }
 
       return saved;
@@ -143,8 +175,15 @@ export class CoopMarketplaceService {
     const order = await this.orderRepo.findOne({ where: { id: orderId } });
     if (!order) throw new NotFoundException('Order not found');
 
-    const allowedForSeller = [CoopOrderStatus.CONFIRMED, CoopOrderStatus.SHIPPED, CoopOrderStatus.CANCELLED];
-    const allowedForBuyer = [CoopOrderStatus.DELIVERED, CoopOrderStatus.DISPUTED];
+    const allowedForSeller = [
+      CoopOrderStatus.CONFIRMED,
+      CoopOrderStatus.SHIPPED,
+      CoopOrderStatus.CANCELLED,
+    ];
+    const allowedForBuyer = [
+      CoopOrderStatus.DELIVERED,
+      CoopOrderStatus.DISPUTED,
+    ];
 
     if (order.sellerId === requesterId && !allowedForSeller.includes(status)) {
       throw new BadRequestException('Invalid status transition for seller');
@@ -161,10 +200,15 @@ export class CoopMarketplaceService {
     if (status === CoopOrderStatus.DELIVERED) updates.deliveredAt = new Date();
 
     await this.orderRepo.update(orderId, updates);
-    return this.orderRepo.findOne({ where: { id: orderId } }) as Promise<CoopOrder>;
+    return this.orderRepo.findOne({
+      where: { id: orderId },
+    }) as Promise<CoopOrder>;
   }
 
-  async getMyOrders(userId: string, as: 'buyer' | 'seller'): Promise<CoopOrder[]> {
+  async getMyOrders(
+    userId: string,
+    as: 'buyer' | 'seller',
+  ): Promise<CoopOrder[]> {
     const where = as === 'buyer' ? { buyerId: userId } : { sellerId: userId };
     return this.orderRepo.find({
       where,
@@ -175,20 +219,28 @@ export class CoopMarketplaceService {
 
   // ── Reviews ────────────────────────────────────────────────────────────────
 
-  async addReview(reviewerId: string, dto: CreateReviewDto): Promise<CoopReview> {
+  async addReview(
+    reviewerId: string,
+    dto: CreateReviewDto,
+  ): Promise<CoopReview> {
     const order = await this.orderRepo.findOne({ where: { id: dto.orderId } });
     if (!order) throw new NotFoundException('Order not found');
     if (order.status !== CoopOrderStatus.DELIVERED) {
-      throw new BadRequestException('Can only review after delivery is confirmed');
+      throw new BadRequestException(
+        'Can only review after delivery is confirmed',
+      );
     }
     if (order.buyerId !== reviewerId && order.sellerId !== reviewerId) {
       throw new ForbiddenException();
     }
 
-    const existing = await this.reviewRepo.findOne({ where: { orderId: dto.orderId, reviewerId } });
+    const existing = await this.reviewRepo.findOne({
+      where: { orderId: dto.orderId, reviewerId },
+    });
     if (existing) throw new ConflictException('Already reviewed this order');
 
-    const revieweeId = order.buyerId === reviewerId ? order.sellerId : order.buyerId;
+    const revieweeId =
+      order.buyerId === reviewerId ? order.sellerId : order.buyerId;
 
     const review = this.reviewRepo.create({
       orderId: dto.orderId,
@@ -200,7 +252,9 @@ export class CoopMarketplaceService {
     return this.reviewRepo.save(review);
   }
 
-  async getSellerRating(sellerId: string): Promise<{ average: number; count: number; reviews: CoopReview[] }> {
+  async getSellerRating(
+    sellerId: string,
+  ): Promise<{ average: number; count: number; reviews: CoopReview[] }> {
     const reviews = await this.reviewRepo.find({
       where: { revieweeId: sellerId },
       relations: ['reviewer'],
@@ -209,6 +263,10 @@ export class CoopMarketplaceService {
     const average = reviews.length
       ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
       : 0;
-    return { average: Math.round(average * 10) / 10, count: reviews.length, reviews };
+    return {
+      average: Math.round(average * 10) / 10,
+      count: reviews.length,
+      reviews,
+    };
   }
 }

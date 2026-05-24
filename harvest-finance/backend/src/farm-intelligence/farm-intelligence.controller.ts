@@ -63,7 +63,7 @@ export class FarmIntelligenceController {
       location,
     });
   }
-  
+
   @Get('recommendations')
   @UseGuards(JwtAuthGuard)
   getRecommendations(@Query('userId') userId: string) {

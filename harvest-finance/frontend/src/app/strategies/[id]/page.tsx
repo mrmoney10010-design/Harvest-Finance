@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Container, Section, Header, Footer } from '@/components/ui';
+import { Container, Section } from '@/components/ui';
 import { StrategyDetails } from '@/components/dashboard/StrategyDetails';
 import { DepositModal } from '@/components/dashboard/DepositModal';
 import { WithdrawModal } from '@/components/dashboard/WithdrawModal';
@@ -100,25 +101,22 @@ export default function StrategyDetailsPage() {
   const vault = vaults.find(v => v.id === id) || MOCK_VAULTS.find(v => v.id === id);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#f4f8f0] dark:bg-[#0d1f12]">
-        <Header />
-        <main className="pt-24 pb-16">
-          <Section>
-            <Container size="lg">
-              <div className="animate-pulse space-y-8">
-                <div className="h-6 w-32 bg-gray-200 dark:bg-white/5 rounded-lg" />
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                   <div className="lg:col-span-2 h-[600px] bg-gray-200 dark:bg-white/5 rounded-[2.5rem]" />
-                   <div className="h-[400px] bg-gray-200 dark:bg-white/5 rounded-[2.5rem]" />
-                </div>
-              </div>
-            </Container>
-          </Section>
-        </main>
-        <Footer />
-      </div>
-    );
+return (
+     <div className="min-h-screen bg-[#f4f8f0] dark:bg-[#0d1f12]">
+       <main className="pt-24 pb-16">
+         <Section>
+           <Container size="lg">
+             <div className="animate-pulse space-y-8">
+               <div className="h-6 w-32 bg-gray-200 dark:bg-white/5 rounded-lg" />
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 h-[600px] bg-gray-200 dark:bg-white/5 rounded-[2.5rem]" />
+                <div className="h-[400px] bg-gray-200 dark:bg-white/5 rounded-[2.5rem]" />
+             </div>
+             </div>
+           </Container>
+         </Section>
+       </main>
+     );
   }
 
   if (!vault) {

@@ -42,7 +42,9 @@ export class NotificationsController {
     @Request() req: any,
   ): Promise<NotificationResponseDto[]> {
     if (req.user.id !== userId && req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('You can only access your own notifications');
+      throw new ForbiddenException(
+        'You can only access your own notifications',
+      );
     }
     return this.notificationsService.findAllByUser(userId);
   }
@@ -55,7 +57,9 @@ export class NotificationsController {
     @Request() req: any,
   ): Promise<NotificationResponseDto> {
     if (req.user.role !== 'ADMIN' && !createNotificationDto.userId) {
-      throw new ForbiddenException('Only admins can create global notifications');
+      throw new ForbiddenException(
+        'Only admins can create global notifications',
+      );
     }
     return this.notificationsService.create(createNotificationDto);
   }
@@ -84,7 +88,9 @@ export class NotificationsController {
     @Request() req: any,
   ): Promise<{ success: boolean }> {
     if (req.user.id !== userId && req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('You can only update your own notifications');
+      throw new ForbiddenException(
+        'You can only update your own notifications',
+      );
     }
     return this.notificationsService.markAllAsRead(userId);
   }

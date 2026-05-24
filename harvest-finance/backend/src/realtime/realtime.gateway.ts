@@ -26,7 +26,9 @@ import { Logger, UseGuards } from '@nestjs/common';
   cors: { origin: '*' },
   namespace: '/realtime',
 })
-export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class RealtimeGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 

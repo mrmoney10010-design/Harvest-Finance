@@ -1,10 +1,19 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as StellarSdk from '@stellar/stellar-sdk';
-import { User } from '../../database/entities/user.entity';
+import { User, UserRole } from '../../database/entities/user.entity';
+
+// Minimal placeholder strategy class for PassportStrategy
+class StellarPlaceholderStrategy {
+  authenticate() {}
+}
 
 export interface StellarPayload {
   stellar_address: string;
@@ -13,7 +22,7 @@ export interface StellarPayload {
 }
 
 @Injectable()
-export class StellarStrategy extends PassportStrategy('stellar') {
+export class StellarStrategy extends PassportStrategy(StellarPlaceholderStrategy, 'stellar') {
   private readonly serverKeypair: StellarSdk.Keypair;
   private readonly networkPassphrase: string;
   private readonly challengeTimeout: number = 300; // 5 minutes
@@ -24,16 +33,17 @@ export class StellarStrategy extends PassportStrategy('stellar') {
     private userRepository: Repository<User>,
   ) {
     super();
-    
+
     const serverSecret = configService.get<string>('STELLAR_SERVER_SECRET');
     if (!serverSecret) {
       throw new Error('STELLAR_SERVER_SECRET environment variable is required');
     }
-    
+
     this.serverKeypair = StellarSdk.Keypair.fromSecret(serverSecret);
-    this.networkPassphrase = configService.get<string>('STELLAR_NETWORK_PASSPHRASE') || 
-      (configService.get<string>('NODE_ENV') === 'production' 
-        ? StellarSdk.Networks.PUBLIC 
+    this.networkPassphrase =
+      configService.get<string>('STELLAR_NETWORK_PASSPHRASE') ||
+      (configService.get<string>('NODE_ENV') === 'production'
+        ? StellarSdk.Networks.PUBLIC
         : StellarSdk.Networks.TESTNET);
   }
 
@@ -44,11 +54,11 @@ export class StellarStrategy extends PassportStrategy('stellar') {
     try {
       // Validate client public key
       const clientKeypair = StellarSdk.Keypair.fromPublicKey(clientPublicKey);
-      
+
       // Create server account with invalid sequence number (0) to prevent execution
       const serverAccount = new StellarSdk.Account(
         this.serverKeypair.publicKey(),
-        '0'
+        '0',
       );
 
       // Set time bounds (5 minutes from now)
@@ -80,7 +90,9 @@ export class StellarStrategy extends PassportStrategy('stellar') {
       // Return XDR
       return transaction.toEnvelope().toXDR('base64');
     } catch (error) {
-      throw new BadRequestException(`Failed to generate challenge: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to generate challenge: ${error.message}`,
+      );
     }
   }
 
@@ -92,7 +104,7 @@ export class StellarStrategy extends PassportStrategy('stellar') {
       // Parse transaction
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         transactionXdr,
-        this.networkPassphrase
+        this.networkPassphrase,
       ) as StellarSdk.Transaction;
 
       // Validate transaction structure
@@ -105,7 +117,7 @@ export class StellarStrategy extends PassportStrategy('stellar') {
       const clientPublicKey = transaction.operations[0].source as string;
 
       // Verify client signature
-      this.verifyClientSignature(transaction, clientPublicKey);
+this.verifyClientSignature(transaction, clientPublicKey);
 
       // Find or create user
       let user = await this.userRepository.findOne({
@@ -114,16 +126,15 @@ export class StellarStrategy extends PassportStrategy('stellar') {
 
       if (!user) {
         // Create new user for Stellar authentication
-        user = this.userRepository.create({
-          stellarAddress: clientPublicKey,
-          email: null, // Can be collected later
-          password: null, // Not used for Stellar auth
-          role: 'USER',
-          firstName: 'Stellar',
-          lastName: 'User',
-          isActive: true,
-        });
-        await this.userRepository.save(user);
+        const newUser = new User();
+        newUser.stellarAddress = clientPublicKey;
+        newUser.email = '';
+        newUser.password = '';
+        newUser.role = UserRole.FARMER;
+        newUser.firstName = 'Stellar';
+        newUser.lastName = 'User';
+        newUser.isActive = true;
+        user = await this.userRepository.save(newUser);
       } else if (!user.isActive) {
         throw new UnauthorizedException('User account is deactivated');
       }
@@ -133,17 +144,24 @@ export class StellarStrategy extends PassportStrategy('stellar') {
 
       return user;
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
-      throw new UnauthorizedException(`Authentication failed: ${error.message}`);
+      throw new UnauthorizedException(
+        `Authentication failed: ${error.message}`,
+      );
     }
   }
 
   /**
    * Validate transaction structure according to SEP-10
    */
-  private validateTransactionStructure(transaction: StellarSdk.Transaction): void {
+  private validateTransactionStructure(
+    transaction: StellarSdk.Transaction,
+  ): void {
     // Check source account is server
     if (transaction.source !== this.serverKeypair.publicKey()) {
       throw new UnauthorizedException('Invalid source account');
@@ -183,7 +201,7 @@ export class StellarStrategy extends PassportStrategy('stellar') {
    */
   private verifyServerSignature(transaction: StellarSdk.Transaction): void {
     const hash = transaction.hash();
-    const serverSignature = transaction.signatures.find(sig => {
+    const serverSignature = transaction.signatures.find((sig) => {
       try {
         return this.serverKeypair.verify(hash, sig.signature());
       } catch {
@@ -199,11 +217,14 @@ export class StellarStrategy extends PassportStrategy('stellar') {
   /**
    * Verify client signature on transaction
    */
-  private verifyClientSignature(transaction: StellarSdk.Transaction, clientPublicKey: string): void {
+  private verifyClientSignature(
+    transaction: StellarSdk.Transaction,
+    clientPublicKey: string,
+  ): void {
     const hash = transaction.hash();
     const clientKeypair = StellarSdk.Keypair.fromPublicKey(clientPublicKey);
-    
-    const clientSignature = transaction.signatures.find(sig => {
+
+    const clientSignature = transaction.signatures.find((sig) => {
       try {
         return clientKeypair.verify(hash, sig.signature());
       } catch {

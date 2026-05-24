@@ -40,7 +40,9 @@ export class PostReaction {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => CommunityPost, (post) => post.reactions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => CommunityPost, (post) => post.reactions, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'post_id' })
   post: CommunityPost;
 }

@@ -103,20 +103,22 @@ export class VaultsController {
     return this.vaultsService.getPublicVaults();
   }
 
-  @Get('metadata')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get vault metadata (names, symbols, asset pairs)' })
-  @ApiResponse({ status: 200, description: 'Vault metadata retrieved successfully' })
-  async getVaultsMetadata(): Promise<any[]> {
-    return this.vaultsService.getVaultsMetadata();
-  @Get('apy-history')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get APY history for vaults' })
-  @ApiResponse({ status: 200, description: 'APY history retrieved successfully' })
-  async getApyHistory(
-    @Query('vaultId') vaultId?: string,
-    @Query('timeRange') timeRange: string = '30d',
-  ): Promise<any[]> {
-    return this.vaultsService.getApyHistory(vaultId, timeRange);
-  }
+    @Get('metadata')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Get vault metadata (names, symbols, asset pairs)' })
+    @ApiResponse({ status: 200, description: 'Vault metadata retrieved successfully' })
+    async getVaultsMetadata(): Promise<any[]> {
+      return this.vaultsService.getVaultsMetadata();
+    }
+
+    @Get('apy-history')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Get APY history for vaults' })
+    @ApiResponse({ status: 200, description: 'APY history retrieved successfully' })
+    async getApyHistory(
+      @Query('vaultId') vaultId?: string,
+      @Query('timeRange') timeRange: string = '30d',
+    ): Promise<any[]> {
+      return this.vaultsService.getApyHistory(vaultId, timeRange);
+    }
 }

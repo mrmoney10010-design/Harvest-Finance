@@ -43,10 +43,16 @@ export class StellarTransactionRecordDto {
   @ApiProperty({ example: 'fe...abc', description: 'Transaction hash' })
   hash: string;
 
-  @ApiProperty({ example: 1234567, description: 'Ledger sequence the tx closed in' })
+  @ApiProperty({
+    example: 1234567,
+    description: 'Ledger sequence the tx closed in',
+  })
   ledger: number;
 
-  @ApiProperty({ example: '2026-04-24T12:00:00Z', description: 'Ledger close time' })
+  @ApiProperty({
+    example: '2026-04-24T12:00:00Z',
+    description: 'Ledger close time',
+  })
   createdAt: string;
 
   @ApiProperty({ example: 'GA...XYZ', description: 'Source account' })
@@ -58,13 +64,24 @@ export class StellarTransactionRecordDto {
   @ApiProperty({ example: 1, description: 'Number of operations in the tx' })
   operationCount: number;
 
-  @ApiProperty({ example: true, description: 'Whether the transaction succeeded' })
+  @ApiProperty({
+    example: true,
+    description: 'Whether the transaction succeeded',
+  })
   successful: boolean;
 
-  @ApiProperty({ example: 'HF-escrow:123', nullable: true, description: 'Memo value if any' })
+  @ApiProperty({
+    example: 'HF-escrow:123',
+    nullable: true,
+    description: 'Memo value if any',
+  })
   memo: string | null;
 
-  @ApiProperty({ example: 'text', nullable: true, description: 'Memo type if any' })
+  @ApiProperty({
+    example: 'text',
+    nullable: true,
+    description: 'Memo type if any',
+  })
   memoType: string | null;
 
   @ApiProperty({ example: '1234567-1', description: 'Horizon paging token' })
@@ -87,21 +104,24 @@ export class StellarHistoryPageDto {
   @ApiProperty({
     example: null,
     nullable: true,
-    description: 'Horizon cursor for the first record in the page (for cursor-based clients)',
+    description:
+      'Horizon cursor for the first record in the page (for cursor-based clients)',
   })
   prevCursor: string | null;
 
   @ApiProperty({
     example: null,
     nullable: true,
-    description: 'Horizon cursor for the last record in the page (for cursor-based clients)',
+    description:
+      'Horizon cursor for the last record in the page (for cursor-based clients)',
   })
   nextCursor: string | null;
 
   @ApiProperty({
     example: null,
     nullable: true,
-    description: 'Total record count; Horizon does not provide totals so this is always null',
+    description:
+      'Total record count; Horizon does not provide totals so this is always null',
   })
   total: number | null;
 }
@@ -110,7 +130,10 @@ export class DecodedOperationDto {
   @ApiProperty({ example: 'payment', description: 'Operation type' })
   type: string;
 
-  @ApiProperty({ example: { amount: '100', destination: 'GA...' }, description: 'Operation details' })
+  @ApiProperty({
+    example: { amount: '100', destination: 'GA...' },
+    description: 'Operation details',
+  })
   details: Record<string, any>;
 }
 

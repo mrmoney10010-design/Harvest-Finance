@@ -61,7 +61,10 @@ export function isVersionSupported(version: string): boolean {
  * Get the API versioning strategy URI format
  * Returns format like: /api/v1/resource, /api/v2/resource
  */
-export function getVersionedRoute(version: ApiVersionEnum | string, route: string): string {
+export function getVersionedRoute(
+  version: ApiVersionEnum | string,
+  route: string,
+): string {
   const v = String(version);
   const cleanRoute = route.startsWith('/') ? route : `/${route}`;
   return `${VERSIONING_CONFIG.versionPrefix}/v${v}${cleanRoute}`;

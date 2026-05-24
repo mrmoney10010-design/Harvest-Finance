@@ -1,8 +1,17 @@
 import {
-  IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ListingCategory, DeliveryOption } from '../../database/entities/coop-listing.entity';
+import {
+  ListingCategory,
+  DeliveryOption,
+} from '../../database/entities/coop-listing.entity';
 
 export class CreateListingDto {
   @ApiProperty()

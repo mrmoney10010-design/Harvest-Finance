@@ -21,7 +21,9 @@ export class AnalyticsController {
   }
 
   @Get('system')
-  @ApiOperation({ summary: 'Get system-level metrics (uptime, request counts)' })
+  @ApiOperation({
+    summary: 'Get system-level metrics (uptime, request counts)',
+  })
   getSystemMetrics() {
     return this.analyticsService.getSystemMetrics();
   }
@@ -39,6 +41,10 @@ export class AnalyticsController {
     @Query('fromStep') fromStep = 'Click Deposit',
     @Query('toStep') toStep = 'Transaction Confirmed',
   ) {
-    return this.analyticsService.getFunnelConversion(funnelName, fromStep, toStep);
+    return this.analyticsService.getFunnelConversion(
+      funnelName,
+      fromStep,
+      toStep,
+    );
   }
 }

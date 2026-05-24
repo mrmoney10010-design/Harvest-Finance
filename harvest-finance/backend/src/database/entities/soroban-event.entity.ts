@@ -41,7 +41,12 @@ export class SorobanEvent {
   @Column({ name: 'ledger_closed_at', type: 'timestamp with time zone' })
   ledgerClosedAt: Date;
 
-  @Column({ name: 'transaction_hash', type: 'varchar', length: 128, nullable: true })
+  @Column({
+    name: 'transaction_hash',
+    type: 'varchar',
+    length: 128,
+    nullable: true,
+  })
   transactionHash: string | null;
 
   @Column({ name: 'paging_token', type: 'varchar', length: 128 })
@@ -53,7 +58,11 @@ export class SorobanEvent {
   @Column({ name: 'value', type: 'jsonb', nullable: true })
   value: unknown;
 
-  @Column({ name: 'in_successful_contract_call', type: 'boolean', default: true })
+  @Column({
+    name: 'in_successful_contract_call',
+    type: 'boolean',
+    default: true,
+  })
   inSuccessfulContractCall: boolean;
 
   @CreateDateColumn({ name: 'indexed_at' })

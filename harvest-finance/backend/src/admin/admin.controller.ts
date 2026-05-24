@@ -94,7 +94,11 @@ export class AdminController {
 
   @Get('users')
   @ApiOperation({ summary: 'Get all users with optional search filter' })
-  @ApiQuery({ name: 'search', required: false, description: 'Search users by name, email, or role' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search users by name, email, or role',
+  })
   @ApiResponse({ status: 200 })
   async getAllUsers(@Query('search') search?: string): Promise<any[]> {
     return this.adminService.getAllUsers(search);

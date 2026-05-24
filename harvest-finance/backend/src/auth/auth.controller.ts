@@ -24,7 +24,12 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponseDto, TokenResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { StellarChallengeDto, StellarVerifyDto, StellarAuthResponseDto, StellarChallengeResponseDto } from './dto/stellar-auth.dto';
+import {
+  StellarChallengeDto,
+  StellarVerifyDto,
+  StellarAuthResponseDto,
+  StellarChallengeResponseDto,
+} from './dto/stellar-auth.dto';
 import { StellarStrategy } from './strategies/stellar.strategy';
 
 @ApiTags('Authentication')
@@ -185,8 +190,10 @@ export class AuthController {
   async generateStellarChallenge(
     @Body() challengeDto: StellarChallengeDto,
   ): Promise<StellarChallengeResponseDto> {
-    const transaction = await this.stellarStrategy.generateChallenge(challengeDto.public_key);
-    
+    const transaction = await this.stellarStrategy.generateChallenge(
+      challengeDto.public_key,
+    );
+
     return {
       server_public_key: this.stellarStrategy.getServerPublicKey(),
       transaction,
@@ -217,15 +224,16 @@ export class AuthController {
     const user = await this.stellarStrategy.validate(verifyDto.transaction);
     const tokens = await this.authService['generateTokens'](user);
 
-    return {
-      access_token: tokens.accessToken,
-      refresh_token: tokens.refreshToken,
-      user: {
-        id: user.id,
-        stellar_address: user.stellarAddress,
-        role: user.role,
-        full_name: [user.firstName, user.lastName].filter(Boolean).join(' ') || '',
-      },
-    };
+return {
+       access_token: tokens.accessToken,
+       refresh_token: tokens.refreshToken,
+       user: {
+         id: user.id,
+         stellar_address: user.stellarAddress ?? '',
+         role: user.role,
+         full_name:
+           [user.firstName, user.lastName].filter(Boolean).join(' ') || '',
+       },
+     };
   }
 }

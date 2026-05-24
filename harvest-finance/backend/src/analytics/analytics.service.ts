@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Vault, VaultStatus } from '../database/entities/vault.entity';
 import { Deposit, DepositStatus } from '../database/entities/deposit.entity';
-import { Withdrawal, WithdrawalStatus } from '../database/entities/withdrawal.entity';
+import {
+  Withdrawal,
+  WithdrawalStatus,
+} from '../database/entities/withdrawal.entity';
 import {
   FunnelConversionDto,
   TrackFunnelEventDto,
@@ -28,11 +31,16 @@ export class AnalyticsService {
   constructor(
     @InjectRepository(Vault) private vaultRepo: Repository<Vault>,
     @InjectRepository(Deposit) private depositRepo: Repository<Deposit>,
-    @InjectRepository(Withdrawal) private withdrawalRepo: Repository<Withdrawal>,
+    @InjectRepository(Withdrawal)
+    private withdrawalRepo: Repository<Withdrawal>,
   ) {}
 
-  incrementRequests() { this.requestCount++; }
-  incrementErrors() { this.errorCount++; }
+  incrementRequests() {
+    this.requestCount++;
+  }
+  incrementErrors() {
+    this.errorCount++;
+  }
 
   async getVaultMetrics(): Promise<VaultMetricsDto> {
     const [totalVaults, activeVaults] = await Promise.all([
@@ -95,7 +103,10 @@ export class AnalyticsService {
     });
 
     if (this.funnelEvents.length > this.maxTrackedEvents) {
-      this.funnelEvents.splice(0, this.funnelEvents.length - this.maxTrackedEvents);
+      this.funnelEvents.splice(
+        0,
+        this.funnelEvents.length - this.maxTrackedEvents,
+      );
     }
 
     return { accepted: true };
@@ -106,7 +117,9 @@ export class AnalyticsService {
     fromStep = 'Click Deposit',
     toStep = 'Transaction Confirmed',
   ): FunnelConversionDto {
-    const events = this.funnelEvents.filter((event) => event.funnelName === funnelName);
+    const events = this.funnelEvents.filter(
+      (event) => event.funnelName === funnelName,
+    );
 
     const steps = Array.from(
       events.reduce((map, event) => {
@@ -116,10 +129,14 @@ export class AnalyticsService {
     ).map(([stepName, count]) => ({ stepName, count }));
 
     const startSessions = new Set(
-      events.filter((event) => event.stepName === fromStep).map((event) => event.sessionId),
+      events
+        .filter((event) => event.stepName === fromStep)
+        .map((event) => event.sessionId),
     );
     const endSessions = new Set(
-      events.filter((event) => event.stepName === toStep).map((event) => event.sessionId),
+      events
+        .filter((event) => event.stepName === toStep)
+        .map((event) => event.sessionId),
     );
 
     const conversionRatePct =

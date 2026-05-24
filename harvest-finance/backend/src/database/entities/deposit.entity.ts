@@ -23,7 +23,7 @@ export enum DepositStatus {
 
 /**
  * Deposit entity representing user deposits into vaults
- * 
+ *
  * Relationships:
  * - One Deposit belongs to one User (depositor)
  * - One Deposit belongs to one Vault
@@ -83,7 +83,7 @@ export class Deposit {
   updatedAt: Date;
 
   // Relationships
-  
+
   /** User who made the deposit */
   @ManyToOne(() => User, (user) => user.id, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })

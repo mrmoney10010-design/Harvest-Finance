@@ -44,7 +44,11 @@ export class CoopOrder {
   @Column({ type: 'decimal', precision: 18, scale: 2, name: 'total_price' })
   totalPrice: number;
 
-  @Column({ type: 'enum', enum: CoopOrderStatus, default: CoopOrderStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: CoopOrderStatus,
+    default: CoopOrderStatus.PENDING,
+  })
   status: CoopOrderStatus;
 
   @Column({ type: 'text', nullable: true })
@@ -53,10 +57,18 @@ export class CoopOrder {
   @Column({ name: 'delivery_address', nullable: true })
   deliveryAddress: string | null;
 
-  @Column({ name: 'confirmed_at', nullable: true, type: 'timestamp with time zone' })
+  @Column({
+    name: 'confirmed_at',
+    nullable: true,
+    type: 'timestamp with time zone',
+  })
   confirmedAt: Date | null;
 
-  @Column({ name: 'delivered_at', nullable: true, type: 'timestamp with time zone' })
+  @Column({
+    name: 'delivered_at',
+    nullable: true,
+    type: 'timestamp with time zone',
+  })
   deliveredAt: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
-import { SorobanEvent } from '../database/entities/soroban-event.entity';
+import { SorobanEvent, SorobanEventType } from '../database/entities/soroban-event.entity';
 import { YieldAnalytics } from '../database/entities/yield-analytics.entity';
 
 export interface HardWorkEvent {
@@ -23,6 +23,8 @@ export interface YieldAnalyticsData {
   pricePerShare: string;
   pricePerSharePrevious: string | null;
   volume24h: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 @Injectable()
@@ -46,7 +48,7 @@ export class YieldAnalyticsService {
       twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
       const hardworkEvents = await this.findHardWorkEvents(twentyFourHoursAgo);
-      
+
       if (hardworkEvents.length === 0) {
         this.logger.log('No new HardWork events to process');
         return;
@@ -54,7 +56,7 @@ export class YieldAnalyticsService {
 
       // Group events by contract ID
       const eventsByContract = this.groupEventsByContract(hardworkEvents);
-      
+
       // Process each contract's events
       for (const [contractId, events] of eventsByContract.entries()) {
         await this.processContractEvents(contractId, events);
@@ -73,31 +75,26 @@ export class YieldAnalyticsService {
   private async findHardWorkEvents(since: Date): Promise<HardWorkEvent[]> {
     const events = await this.sorobanEventRepository.find({
       where: {
-        type: 'contract',
+        type: SorobanEventType.CONTRACT,
         ledgerClosedAt: MoreThanOrEqual(since),
       },
       order: { ledgerClosedAt: 'ASC' },
     });
 
     return events
-      .filter(event => this.isHardWorkEvent(event))
-      .map(event => this.parseHardWorkEvent(event));
+      .filter((event) => this.isHardWorkEvent(event))
+      .map((event) => this.parseHardWorkEvent(event));
   }
 
   /**
    * Check if a Soroban event is a HardWork event
    */
   private isHardWorkEvent(event: SorobanEvent): boolean {
-    return (
-      event.topics &&
-      event.topics.length > 0 &&
-      event.topics[0] === 'HardWork' &&
-      event.value &&
-      typeof event.value === 'object' &&
-      event.value !== null &&
-      'totalAssets' in event.value &&
-      'totalShares' in event.value
-    );
+    if (!event.topics || event.topics.length === 0) return false;
+    if (event.topics[0] !== 'HardWork') return false;
+    if (!event.value || typeof event.value !== 'object') return false;
+    const val = event.value as Record<string, unknown>;
+    return 'totalAssets' in val && 'totalShares' in val;
   }
 
   /**
@@ -117,23 +114,28 @@ export class YieldAnalyticsService {
   /**
    * Group events by contract ID
    */
-  private groupEventsByContract(events: HardWorkEvent[]): Map<string, HardWorkEvent[]> {
+  private groupEventsByContract(
+    events: HardWorkEvent[],
+  ): Map<string, HardWorkEvent[]> {
     const grouped = new Map<string, HardWorkEvent[]>();
-    
+
     for (const event of events) {
       if (!grouped.has(event.contractId)) {
         grouped.set(event.contractId, []);
       }
       grouped.get(event.contractId)!.push(event);
     }
-    
+
     return grouped;
   }
 
   /**
    * Process events for a specific contract
    */
-  private async processContractEvents(contractId: string, events: HardWorkEvent[]): Promise<void> {
+  private async processContractEvents(
+    contractId: string,
+    events: HardWorkEvent[],
+  ): Promise<void> {
     // Get the latest event for today's analytics
     const latestEvent = events[events.length - 1];
     const today = new Date();
@@ -142,12 +144,13 @@ export class YieldAnalyticsService {
     // Calculate price per share
     const totalAssets = BigInt(latestEvent.totalAssets);
     const totalShares = BigInt(latestEvent.totalShares);
-    const pricePerShare = totalShares > 0n ? (totalAssets * 10n**18n) / totalShares : 0n;
+    const pricePerShare =
+      totalShares > 0n ? (totalAssets * 10n ** 18n) / totalShares : 0n;
 
     // Get previous day's price per share for APY calculation
     const previousDay = new Date(today);
     previousDay.setDate(previousDay.getDate() - 1);
-    
+
     const previousAnalytics = await this.yieldAnalyticsRepository.findOne({
       where: {
         contractId,
@@ -155,15 +158,21 @@ export class YieldAnalyticsService {
       },
     });
 
-    const pricePerSharePrevious = previousAnalytics 
+    const pricePerSharePrevious = previousAnalytics
       ? BigInt(previousAnalytics.pricePerShare)
       : null;
 
     // Calculate daily APY
-    const dailyApy = this.calculateDailyApy(pricePerShare, pricePerSharePrevious);
+    const dailyApy = this.calculateDailyApy(
+      pricePerShare,
+      pricePerSharePrevious,
+    );
 
     // Calculate 7-day rolling APY
-    const sevenDayApy = await this.calculateSevenDayRollingApy(contractId, today);
+    const sevenDayApy = await this.calculateSevenDayRollingApy(
+      contractId,
+      today,
+    );
 
     // Calculate 24h volume (sum of all HardWork events in last 24h)
     const volume24h = events.reduce((sum, event) => {
@@ -185,11 +194,14 @@ export class YieldAnalyticsService {
       updatedAt: new Date(),
     };
 
-    await this.yieldAnalyticsRepository.upsert(analyticsData, ['contractId', 'date']);
-    
+    await this.yieldAnalyticsRepository.upsert(analyticsData, [
+      'contractId',
+      'date',
+    ]);
+
     this.logger.log(
       `Updated yield analytics for contract ${contractId}: ` +
-      `7-day APY: ${sevenDayApy?.toFixed(2)}%, Daily APY: ${dailyApy?.toFixed(2)}%`
+        `7-day APY: ${sevenDayApy?.toFixed(2)}%, Daily APY: ${dailyApy?.toFixed(2)}%`,
     );
   }
 
@@ -198,18 +210,19 @@ export class YieldAnalyticsService {
    */
   private calculateDailyApy(
     currentPrice: bigint,
-    previousPrice: bigint | null
+    previousPrice: bigint | null,
   ): number | null {
     if (!previousPrice || previousPrice === 0n) {
       return null;
     }
 
     // Calculate daily return as percentage
-    const dailyReturn = Number((currentPrice * 10000n) / previousPrice - 10000n) / 100;
-    
+    const dailyReturn =
+      Number((currentPrice * 10000n) / previousPrice - 10000n) / 100;
+
     // Annualize the daily return (APY = (1 + daily_return)^365 - 1)
     const apy = Math.pow(1 + dailyReturn / 100, 365) - 1;
-    
+
     return Math.round(apy * 10000) / 100; // Round to 2 decimal places
   }
 
@@ -218,7 +231,7 @@ export class YieldAnalyticsService {
    */
   private async calculateSevenDayRollingApy(
     contractId: string,
-    currentDate: Date
+    currentDate: Date,
   ): Promise<number | null> {
     const sevenDaysAgo = new Date(currentDate);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -244,11 +257,12 @@ export class YieldAnalyticsService {
       return null;
     }
 
-    const totalReturn = Number((lastPrice * 10000n) / firstPrice - 10000n) / 100;
-    
+    const totalReturn =
+      Number((lastPrice * 10000n) / firstPrice - 10000n) / 100;
+
     // Annualize the 7-day return (APY = (1 + total_return)^(365/7) - 1)
     const apy = Math.pow(1 + totalReturn / 100, 365 / 7) - 1;
-    
+
     return Math.round(apy * 10000) / 100; // Round to 2 decimal places
   }
 
@@ -257,7 +271,7 @@ export class YieldAnalyticsService {
    */
   async getYieldAnalytics(
     contractId: string,
-    days: number = 30
+    days: number = 30,
   ): Promise<YieldAnalyticsData[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -270,7 +284,7 @@ export class YieldAnalyticsService {
       order: { date: 'DESC' },
     });
 
-    return analytics.map(a => ({
+    return analytics.map((a) => ({
       contractId: a.contractId,
       date: a.date,
       totalAssets: a.totalAssets,
@@ -281,13 +295,17 @@ export class YieldAnalyticsService {
       pricePerShare: a.pricePerShare,
       pricePerSharePrevious: a.pricePerSharePrevious,
       volume24h: a.volume24h,
+      createdAt: a.createdAt,
+      updatedAt: a.updatedAt,
     }));
   }
 
   /**
    * Get current 7-day APY for all contracts
    */
-  async getCurrentSevenDayApys(): Promise<{ contractId: string; apy: number | null }[]> {
+  async getCurrentSevenDayApys(): Promise<
+    { contractId: string; apy: number | null }[]
+  > {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -296,7 +314,7 @@ export class YieldAnalyticsService {
       select: ['contractId', 'sevenDayApy'],
     });
 
-    return analytics.map(a => ({
+    return analytics.map((a) => ({
       contractId: a.contractId,
       apy: a.sevenDayApy,
     }));

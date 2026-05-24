@@ -5,7 +5,7 @@ import { cn } from '@/components/ui/types';
 
 const shimmer = {
   animate: { opacity: [0.4, 1, 0.4] },
-  transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' },
+  transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' as const },
 };
 
 export function Skeleton({ className }: { className?: string }) {

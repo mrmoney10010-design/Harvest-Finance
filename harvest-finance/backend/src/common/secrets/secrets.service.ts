@@ -1,6 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand,
+} from '@aws-sdk/client-secrets-manager';
 import axios from 'axios';
 
 @Injectable()
@@ -33,7 +36,9 @@ export class SecretsService implements OnModuleInit {
         return await this.getVaultSecret(key);
       }
     } catch (err) {
-      this.logger.error(`Failed to fetch secret "${key}" from ${provider}: ${err.message}`);
+      this.logger.error(
+        `Failed to fetch secret "${key}" from ${provider}: ${err.message}`,
+      );
     }
 
     // Default fallback to environment variables
@@ -45,7 +50,10 @@ export class SecretsService implements OnModuleInit {
       throw new Error('AWS Secrets Manager client not initialized');
     }
 
-    const secretId = this.configService.get<string>(`AWS_SECRET_ID_${key}`, key);
+    const secretId = this.configService.get<string>(
+      `AWS_SECRET_ID_${key}`,
+      key,
+    );
     const command = new GetSecretValueCommand({ SecretId: secretId });
     const response = await this.awsClient.send(command);
 
@@ -67,7 +75,10 @@ export class SecretsService implements OnModuleInit {
   private async getVaultSecret(key: string): Promise<string> {
     const vaultUrl = this.configService.get<string>('VAULT_URL');
     const vaultToken = this.configService.get<string>('VAULT_TOKEN');
-    const vaultPath = this.configService.get<string>('VAULT_SECRET_PATH', 'secret/data/harvest-finance');
+    const vaultPath = this.configService.get<string>(
+      'VAULT_SECRET_PATH',
+      'secret/data/harvest-finance',
+    );
 
     if (!vaultUrl || !vaultToken) {
       throw new Error('Vault configuration missing (VAULT_URL or VAULT_TOKEN)');

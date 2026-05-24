@@ -205,10 +205,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
       const { access_token, user } = verifyResponse.data;
       const normalizedUser = { 
-        ...user, 
+        id: user.id,
         name: user.full_name,
+        email: user.email,
         role: normalizeRole(user.role) 
-      };
+      } as User;
       
       saveToStorage(access_token, normalizedUser);
       set({ user: normalizedUser, token: access_token, isAuthenticated: true, isLoading: false });

@@ -65,10 +65,18 @@ export class Vault {
   @Column({ type: 'decimal', precision: 18, scale: 8, default: 0 })
   interestRate: number;
 
-  @Column({ type: 'timestamp with time zone', name: 'maturity_date', nullable: true })
+  @Column({
+    type: 'timestamp with time zone',
+    name: 'maturity_date',
+    nullable: true,
+  })
   maturityDate: Date | null;
 
-  @Column({ type: 'timestamp with time zone', name: 'lock_period_end', nullable: true })
+  @Column({
+    type: 'timestamp with time zone',
+    name: 'lock_period_end',
+    nullable: true,
+  })
   lockPeriodEnd: Date | null;
 
   @Column({ name: 'is_public', default: true })

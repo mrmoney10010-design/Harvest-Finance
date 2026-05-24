@@ -51,26 +51,26 @@ describe('HarvestSchedulerService', () => {
 
   it('should initialize with default cron expression when not configured', () => {
     mockConfigService.get.mockReturnValue(undefined);
-    
+
     // Re-instantiate to test constructor
     const newService = new HarvestSchedulerService(
       harvestService as any,
       configService as any,
       mockSchedulerRegistry as any,
     );
-    
+
     expect(newService).toBeDefined();
   });
 
   it('should initialize with configured cron expression', () => {
     mockConfigService.get.mockReturnValue('0 */10 * * * *');
-    
+
     const newService = new HarvestSchedulerService(
       harvestService as any,
       configService as any,
       mockSchedulerRegistry as any,
     );
-    
+
     expect(newService).toBeDefined();
   });
 
@@ -80,7 +80,9 @@ describe('HarvestSchedulerService', () => {
 
       await service.handleHarvest();
 
-      expect(mockConfigService.get).toHaveBeenCalledWith('DEFAULT_VAULT_ADDRESS');
+      expect(mockConfigService.get).toHaveBeenCalledWith(
+        'DEFAULT_VAULT_ADDRESS',
+      );
       expect(harvestService.performHarvest).not.toHaveBeenCalled();
     });
 
@@ -97,7 +99,9 @@ describe('HarvestSchedulerService', () => {
 
       await service.handleHarvest();
 
-      expect(harvestService.performHarvest).toHaveBeenCalledWith(mockVaultAddress);
+      expect(harvestService.performHarvest).toHaveBeenCalledWith(
+        mockVaultAddress,
+      );
     });
 
     it('should log warning when harvest fails', async () => {
@@ -113,7 +117,9 @@ describe('HarvestSchedulerService', () => {
 
       await service.handleHarvest();
 
-      expect(harvestService.performHarvest).toHaveBeenCalledWith(mockVaultAddress);
+      expect(harvestService.performHarvest).toHaveBeenCalledWith(
+        mockVaultAddress,
+      );
     });
 
     it('should handle exception during harvest', async () => {
@@ -122,12 +128,15 @@ describe('HarvestSchedulerService', () => {
         if (key === 'DEFAULT_VAULT_ADDRESS') return mockVaultAddress;
         return null;
       });
-      mockHarvestService.performHarvest.mockRejectedValue(new Error('Unexpected error'));
+      mockHarvestService.performHarvest.mockRejectedValue(
+        new Error('Unexpected error'),
+      );
 
       await service.handleHarvest();
 
-      expect(harvestService.performHarvest).toHaveBeenCalledWith(mockVaultAddress);
+      expect(harvestService.performHarvest).toHaveBeenCalledWith(
+        mockVaultAddress,
+      );
     });
   });
-
 });

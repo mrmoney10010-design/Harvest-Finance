@@ -73,7 +73,7 @@ describe('HarvestService', () => {
       // Re-instantiate to trigger constructor
       const newService = new HarvestService(
         configService as any,
-        customLogger as any
+        customLogger as any,
       );
 
       expect(newService).toBeDefined();
@@ -86,7 +86,7 @@ describe('HarvestService', () => {
 
       const newService = new HarvestService(
         configService as any,
-        customLogger as any
+        customLogger as any,
       );
 
       expect(newService).toBeDefined();
@@ -106,7 +106,9 @@ describe('HarvestService', () => {
     it('should return error when blockchain connection not initialized', async () => {
       (service as any).controllerContract = null;
 
-      const result = await service.performHarvest('0x1234567890123456789012345678901234567890');
+      const result = await service.performHarvest(
+        '0x1234567890123456789012345678901234567890',
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Blockchain connection not initialized');
@@ -115,7 +117,9 @@ describe('HarvestService', () => {
     it('should return error when already running', async () => {
       (service as any).isRunning = true;
 
-      const result = await service.performHarvest('0x1234567890123456789012345678901234567890');
+      const result = await service.performHarvest(
+        '0x1234567890123456789012345678901234567890',
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Harvest already running');
@@ -124,7 +128,9 @@ describe('HarvestService', () => {
     it('should return error when vault is not registered', async () => {
       mockContract.vaults.mockResolvedValue(false);
 
-      const result = await service.performHarvest('0x1234567890123456789012345678901234567890');
+      const result = await service.performHarvest(
+        '0x1234567890123456789012345678901234567890',
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('not registered');
@@ -134,7 +140,9 @@ describe('HarvestService', () => {
       mockContract.vaults.mockResolvedValue(true);
       mockContract.strategies.mockResolvedValue(ethers.ZeroAddress);
 
-      const result = await service.performHarvest('0x1234567890123456789012345678901234567890');
+      const result = await service.performHarvest(
+        '0x1234567890123456789012345678901234567890',
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('No strategy set');
@@ -149,22 +157,34 @@ describe('HarvestService', () => {
       };
 
       mockContract.vaults.mockResolvedValue(true);
-      mockContract.strategies.mockResolvedValue('0x1111111111111111111111111111111111111111');
+      mockContract.strategies.mockResolvedValue(
+        '0x1111111111111111111111111111111111111111',
+      );
       mockContract.doHardWork.mockResolvedValue(mockTx);
 
-      const result = await service.performHarvest('0x1234567890123456789012345678901234567890');
+      const result = await service.performHarvest(
+        '0x1234567890123456789012345678901234567890',
+      );
 
       expect(result.success).toBe(true);
       expect(result.txHash).toBe('0xabc123');
-      expect(mockContract.doHardWork).toHaveBeenCalledWith('0x1234567890123456789012345678901234567890');
+      expect(mockContract.doHardWork).toHaveBeenCalledWith(
+        '0x1234567890123456789012345678901234567890',
+      );
     });
 
     it('should handle transaction failure', async () => {
       mockContract.vaults.mockResolvedValue(true);
-      mockContract.strategies.mockResolvedValue('0x1111111111111111111111111111111111111111');
-      mockContract.doHardWork.mockRejectedValue(new Error('Transaction failed'));
+      mockContract.strategies.mockResolvedValue(
+        '0x1111111111111111111111111111111111111111',
+      );
+      mockContract.doHardWork.mockRejectedValue(
+        new Error('Transaction failed'),
+      );
 
-      const result = await service.performHarvest('0x1234567890123456789012345678901234567890');
+      const result = await service.performHarvest(
+        '0x1234567890123456789012345678901234567890',
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Transaction failed');
@@ -179,20 +199,30 @@ describe('HarvestService', () => {
       };
 
       mockContract.vaults.mockResolvedValue(true);
-      mockContract.strategies.mockResolvedValue('0x1111111111111111111111111111111111111111');
+      mockContract.strategies.mockResolvedValue(
+        '0x1111111111111111111111111111111111111111',
+      );
       mockContract.doHardWork.mockResolvedValue(mockTx);
 
-      await service.performHarvest('0x1234567890123456789012345678901234567890');
+      await service.performHarvest(
+        '0x1234567890123456789012345678901234567890',
+      );
 
       expect((service as any).isRunning).toBe(false);
     });
 
     it('should reset isRunning flag after failure', async () => {
       mockContract.vaults.mockResolvedValue(true);
-      mockContract.strategies.mockResolvedValue('0x1111111111111111111111111111111111111111');
-      mockContract.doHardWork.mockRejectedValue(new Error('Transaction failed'));
+      mockContract.strategies.mockResolvedValue(
+        '0x1111111111111111111111111111111111111111',
+      );
+      mockContract.doHardWork.mockRejectedValue(
+        new Error('Transaction failed'),
+      );
 
-      await service.performHarvest('0x1234567890123456789012345678901234567890');
+      await service.performHarvest(
+        '0x1234567890123456789012345678901234567890',
+      );
 
       expect((service as any).isRunning).toBe(false);
     });

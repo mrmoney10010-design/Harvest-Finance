@@ -15,7 +15,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CoopMarketplaceService } from './coop-marketplace.service';
 import { CreateListingDto } from './dto/create-listing.dto';
@@ -79,7 +84,10 @@ export class CoopMarketplaceController {
   }
 
   @Patch('orders/:id/status')
-  @ApiOperation({ summary: 'Update order status (seller: confirm/ship/cancel, buyer: delivered/dispute)' })
+  @ApiOperation({
+    summary:
+      'Update order status (seller: confirm/ship/cancel, buyer: delivered/dispute)',
+  })
   @ApiQuery({ name: 'status', enum: CoopOrderStatus })
   updateStatus(
     @Request() req: any,
@@ -90,7 +98,7 @@ export class CoopMarketplaceController {
   }
 
   @Get('orders/mine')
-  @ApiOperation({ summary: "Get my orders (as buyer or seller)" })
+  @ApiOperation({ summary: 'Get my orders (as buyer or seller)' })
   @ApiQuery({ name: 'as', enum: ['buyer', 'seller'], required: false })
   myOrders(@Request() req: any, @Query('as') as: 'buyer' | 'seller' = 'buyer') {
     return this.service.getMyOrders(req.user.id, as);

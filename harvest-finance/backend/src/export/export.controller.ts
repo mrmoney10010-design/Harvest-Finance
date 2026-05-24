@@ -12,12 +12,12 @@ import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ExportService } from './export.service';
 import { UserRole } from '../database/entities/user.entity';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiBearerAuth, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
   ApiResponse,
-  ApiQuery
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Export')
@@ -49,7 +49,7 @@ export class ExportController {
     }
 
     const data = await this.exportService.getTransactionData(userId);
-    
+
     if (format === 'excel') {
       const buffer = await this.exportService.generateExcel(data);
       res.setHeader(
@@ -95,11 +95,13 @@ export class ExportController {
   ) {
     // Check authorization: user can only export their own data, admins can export anyone
     if (req.user.id !== userId && req.user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('You can only export your own transaction history');
+      throw new ForbiddenException(
+        'You can only export your own transaction history',
+      );
     }
 
     const data = await this.exportService.getTransactionData(userId);
-    
+
     if (format === 'excel') {
       const buffer = await this.exportService.generateExcel(data);
       res.setHeader(
@@ -148,7 +150,7 @@ export class ExportController {
     }
 
     const data = await this.exportService.getTransactionData();
-    
+
     if (format === 'excel') {
       const buffer = await this.exportService.generateExcel(data);
       res.setHeader(
@@ -197,7 +199,7 @@ export class ExportController {
     }
 
     const data = await this.exportService.getTransactionData();
-    
+
     if (format === 'excel') {
       const buffer = await this.exportService.generateExcel(data);
       res.setHeader(

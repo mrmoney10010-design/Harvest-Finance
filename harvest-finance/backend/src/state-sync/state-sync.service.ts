@@ -24,11 +24,18 @@ export class StateSyncService {
 
   constructor(
     @InjectRepository(Vault) private readonly vaultRepo: Repository<Vault>,
-    @InjectRepository(Deposit) private readonly depositRepo: Repository<Deposit>,
+    @InjectRepository(Deposit)
+    private readonly depositRepo: Repository<Deposit>,
     private readonly config: ConfigService,
   ) {
-    this.contractAddress = this.config.get<string>('VAULT_CONTRACT_ADDRESS', '');
-    this.rpcUrl = this.config.get<string>('SOROBAN_RPC_URL', 'https://soroban-testnet.stellar.org');
+    this.contractAddress = this.config.get<string>(
+      'VAULT_CONTRACT_ADDRESS',
+      '',
+    );
+    this.rpcUrl = this.config.get<string>(
+      'SOROBAN_RPC_URL',
+      'https://soroban-testnet.stellar.org',
+    );
   }
 
   /**
@@ -50,7 +57,10 @@ export class StateSyncService {
         this.logger.log(`All ${this.lastResults.length} vault(s) in sync`);
       }
     } catch (err) {
-      this.logger.error(`State sync failed: ${(err as Error).message}`, (err as Error).stack);
+      this.logger.error(
+        `State sync failed: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
     } finally {
       this.lastSyncAt = new Date();
     }
@@ -83,11 +93,19 @@ export class StateSyncService {
           `Vault ${vault.id} (${vault.vaultName}): DB=${dbTotalAssets} on-chain=${onChainTotalAssets} drift=${drift}`,
         );
         // Auto-correct DB to match confirmed deposit sum
-        await this.vaultRepo.update(vault.id, { totalDeposits: onChainTotalAssets });
+        await this.vaultRepo.update(vault.id, {
+          totalDeposits: onChainTotalAssets,
+        });
         this.logger.log(`Vault ${vault.id} corrected to ${onChainTotalAssets}`);
       }
 
-      results.push({ vaultId: vault.id, dbTotalAssets, onChainTotalAssets, drift, synced });
+      results.push({
+        vaultId: vault.id,
+        dbTotalAssets,
+        onChainTotalAssets,
+        drift,
+        synced,
+      });
     }
 
     return results;

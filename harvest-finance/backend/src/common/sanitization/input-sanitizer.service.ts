@@ -90,9 +90,7 @@ export class InputSanitizerService {
     }
 
     if (num < min || num > max) {
-      throw new BadRequestException(
-        `Amount must be between ${min} and ${max}`,
-      );
+      throw new BadRequestException(`Amount must be between ${min} and ${max}`);
     }
 
     return num;
@@ -130,10 +128,7 @@ export class InputSanitizerService {
     maxLimit: number = 100,
   ): { skip: number; limit: number } {
     const safeSkip = Math.max(0, Math.floor(skip || 0));
-    const safeLimit = Math.min(
-      Math.max(1, Math.floor(limit || 20)),
-      maxLimit,
-    );
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit || 20)), maxLimit);
 
     return { skip: safeSkip, limit: safeLimit };
   }

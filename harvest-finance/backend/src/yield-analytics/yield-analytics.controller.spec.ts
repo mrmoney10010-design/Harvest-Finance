@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { YieldAnalyticsController } from './yield-analytics.controller';
 import { YieldAnalyticsService } from './yield-analytics.service';
-import { 
-  YieldAnalyticsPageDto, 
-  ContractApyDto, 
-  ProcessHardWorkEventsResponseDto 
+import {
+  YieldAnalyticsPageDto,
+  ContractApyDto,
+  ProcessHardWorkEventsResponseDto,
 } from './dto/yield-analytics.dto';
 
 describe('YieldAnalyticsController', () => {
@@ -67,7 +67,10 @@ describe('YieldAnalyticsController', () => {
         limit: 50,
       });
 
-      expect(service.getYieldAnalytics).toHaveBeenCalledWith('test-contract', 30);
+      expect(service.getYieldAnalytics).toHaveBeenCalledWith(
+        'test-contract',
+        30,
+      );
       expect(result).toEqual({
         items: mockYieldAnalyticsData,
         total: 1,
@@ -79,7 +82,7 @@ describe('YieldAnalyticsController', () => {
     it('should use default values when not provided', async () => {
       service.getYieldAnalytics.mockResolvedValue([]);
 
-           await controller.getYieldAnalytics({});
+      await controller.getYieldAnalytics({});
 
       expect(service.getYieldAnalytics).toHaveBeenCalledWith('', 30);
     });
@@ -100,13 +103,19 @@ describe('YieldAnalyticsController', () => {
     it('should return yield analytics for specific contract', async () => {
       service.getYieldAnalytics.mockResolvedValue(mockYieldAnalyticsData);
 
-      const result = await controller.getContractYieldAnalytics('test-contract', {
-        days: 14,
-        skip: 10,
-        limit: 25,
-      });
+      const result = await controller.getContractYieldAnalytics(
+        'test-contract',
+        {
+          days: 14,
+          skip: 10,
+          limit: 25,
+        },
+      );
 
-      expect(service.getYieldAnalytics).toHaveBeenCalledWith('test-contract', 14);
+      expect(service.getYieldAnalytics).toHaveBeenCalledWith(
+        'test-contract',
+        14,
+      );
       expect(result).toEqual({
         items: mockYieldAnalyticsData,
         total: 1,
@@ -131,7 +140,9 @@ describe('YieldAnalyticsController', () => {
     });
 
     it('should handle processing errors', async () => {
-      service.processHardWorkEvents.mockRejectedValue(new Error('Processing failed'));
+      service.processHardWorkEvents.mockRejectedValue(
+        new Error('Processing failed'),
+      );
 
       const result = await controller.processHardWorkEvents();
 

@@ -23,7 +23,8 @@ describe('AuthController', () => {
   };
 
   const mockStellarChallengeResponse = {
-    server_public_key: 'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
+    server_public_key:
+      'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
     transaction: 'AAAA...',
     network_passphrase: 'Test SDF Network ; September 2015',
   };
@@ -41,7 +42,11 @@ describe('AuthController', () => {
     mockStellarStrategy = {
       generateChallenge: jest.fn(),
       validate: jest.fn(),
-      getServerPublicKey: jest.fn().mockReturnValue('GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q'),
+      getServerPublicKey: jest
+        .fn()
+        .mockReturnValue(
+          'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
+        ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -103,7 +108,9 @@ describe('AuthController', () => {
         refresh_token: 'mock_refresh_token',
       };
 
-      mockAuthService.refresh.mockResolvedValue({ access_token: 'new_access_token' });
+      mockAuthService.refresh.mockResolvedValue({
+        access_token: 'new_access_token',
+      });
 
       const result = await controller.refresh(refreshDto);
 
@@ -120,7 +127,10 @@ describe('AuthController', () => {
         },
       };
 
-      mockAuthService.logout.mockResolvedValue({ success: true, message: 'Logged out successfully' });
+      mockAuthService.logout.mockResolvedValue({
+        success: true,
+        message: 'Logged out successfully',
+      });
 
       const result = await controller.logout(mockReq as any);
 
@@ -170,19 +180,25 @@ describe('AuthController', () => {
     describe('generateStellarChallenge', () => {
       it('should generate a challenge for Stellar authentication', async () => {
         const challengeDto = {
-          public_key: 'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
+          public_key:
+            'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
         };
 
-        mockStellarStrategy.generateChallenge.mockResolvedValue('AAAAchallenge_xdr');
+        mockStellarStrategy.generateChallenge.mockResolvedValue(
+          'AAAAchallenge_xdr',
+        );
 
         const result = await controller.generateStellarChallenge(challengeDto);
 
         expect(result).toEqual({
-          server_public_key: 'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
+          server_public_key:
+            'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
           transaction: 'AAAAchallenge_xdr',
           network_passphrase: 'Test SDF Network ; September 2015',
         });
-        expect(mockStellarStrategy.generateChallenge).toHaveBeenCalledWith(challengeDto.public_key);
+        expect(mockStellarStrategy.generateChallenge).toHaveBeenCalledWith(
+          challengeDto.public_key,
+        );
       });
 
       it('should handle invalid public key', async () => {
@@ -191,11 +207,12 @@ describe('AuthController', () => {
         };
 
         mockStellarStrategy.generateChallenge.mockRejectedValue(
-          new Error('Invalid public key format')
+          new Error('Invalid public key format'),
         );
 
-        await expect(controller.generateStellarChallenge(challengeDto))
-          .rejects.toThrow('Invalid public key format');
+        await expect(
+          controller.generateStellarChallenge(challengeDto),
+        ).rejects.toThrow('Invalid public key format');
       });
     });
 
@@ -207,7 +224,8 @@ describe('AuthController', () => {
 
         const mockUser = {
           id: 'stellar-user-id',
-          stellarAddress: 'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
+          stellarAddress:
+            'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
           role: 'USER',
           firstName: 'Stellar',
           lastName: 'User',
@@ -226,12 +244,15 @@ describe('AuthController', () => {
           refresh_token: 'stellar_refresh_token',
           user: {
             id: 'stellar-user-id',
-            stellar_address: 'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
+            stellar_address:
+              'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
             role: 'USER',
             full_name: 'Stellar User',
           },
         });
-        expect(mockStellarStrategy.validate).toHaveBeenCalledWith(verifyDto.transaction);
+        expect(mockStellarStrategy.validate).toHaveBeenCalledWith(
+          verifyDto.transaction,
+        );
         expect(mockAuthService.generateTokens).toHaveBeenCalledWith(mockUser);
       });
 
@@ -241,11 +262,12 @@ describe('AuthController', () => {
         };
 
         mockStellarStrategy.validate.mockRejectedValue(
-          new Error('Invalid transaction format')
+          new Error('Invalid transaction format'),
         );
 
-        await expect(controller.verifyStellarAuth(verifyDto))
-          .rejects.toThrow('Invalid transaction format');
+        await expect(controller.verifyStellarAuth(verifyDto)).rejects.toThrow(
+          'Invalid transaction format',
+        );
       });
 
       it('should handle unauthorized access', async () => {
@@ -254,11 +276,12 @@ describe('AuthController', () => {
         };
 
         mockStellarStrategy.validate.mockRejectedValue(
-          new Error('Authentication failed: Invalid signature')
+          new Error('Authentication failed: Invalid signature'),
         );
 
-        await expect(controller.verifyStellarAuth(verifyDto))
-          .rejects.toThrow('Authentication failed: Invalid signature');
+        await expect(controller.verifyStellarAuth(verifyDto)).rejects.toThrow(
+          'Authentication failed: Invalid signature',
+        );
       });
     });
   });

@@ -15,10 +15,13 @@ describe('Stellar Authentication Integration', () => {
   let stellarStrategy: StellarStrategy;
   let userRepository: jest.Mocked<Repository<User>>;
 
-  const testServerSecret = 'SBX7SARQOFS6IM2HS2N5TVK54AEF55E3FHOXBTWA6IPEEJJ4W5WJWE6W';
+  const testServerSecret =
+    'SBX7SARQOFS6IM2HS2N5TVK54AEF55E3FHOXBTWA6IPEEJJ4W5WJWE6W';
   const testNetworkPassphrase = 'Test SDF Network ; September 2015';
-  const testClientSecret = 'SCZANGBAZEY5BOOEO6SCKZ3SPNGE6US4QOANF3XRGA4Q2BMVIQZB4H7Q';
-  const testClientPublicKey = 'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q';
+  const testClientSecret =
+    'SCZANGBAZEY5BOOEO6SCKZ3SPNGE6US4QOANF3XRGA4Q2BMVIQZB4H7Q';
+  const testClientPublicKey =
+    'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q';
 
   beforeAll(async () => {
     const mockConfigService = {
@@ -62,13 +65,13 @@ describe('Stellar Authentication Integration', () => {
         },
       ],
     })
-    .overrideProvider(AuthService)
-    .useValue(mockAuthService)
-    .compile();
+      .overrideProvider(AuthService)
+      .useValue(mockAuthService)
+      .compile();
 
     authController = module.get<AuthController>(AuthController);
     stellarStrategy = module.get<StellarStrategy>(StellarStrategy);
-    userRepository = module.get(getRepositoryToken(User)) as jest.Mocked<Repository<User>>;
+    userRepository = module.get(getRepositoryToken(User));
   });
 
   afterAll(async () => {
@@ -86,22 +89,27 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challengeResponse = await authController.generateStellarChallenge(challengeDto);
-      
+      const challengeResponse =
+        await authController.generateStellarChallenge(challengeDto);
+
       expect(challengeResponse).toHaveProperty('server_public_key');
       expect(challengeResponse).toHaveProperty('transaction');
       expect(challengeResponse).toHaveProperty('network_passphrase');
-      expect(challengeResponse.server_public_key).toBe('GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q');
+      expect(challengeResponse.server_public_key).toBe(
+        'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
+      );
       expect(challengeResponse.network_passphrase).toBe(testNetworkPassphrase);
 
       // Step 2: Parse and sign transaction (client side simulation)
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         challengeResponse.transaction,
-        testNetworkPassphrase
+        testNetworkPassphrase,
       ) as StellarSdk.Transaction;
 
       // Verify transaction structure
-      expect(transaction.source).toBe('GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q');
+      expect(transaction.source).toBe(
+        'GD5DJQDQKG6GSUWQJQGQKQ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
+      );
       expect(transaction.sequence).toBe('0');
       expect(transaction.operations.length).toBe(1);
       expect(transaction.operations[0].type).toBe('manageData');
@@ -146,7 +154,10 @@ describe('Stellar Authentication Integration', () => {
 
       // Verify authentication response
       expect(authResponse).toHaveProperty('access_token', 'test_access_token');
-      expect(authResponse).toHaveProperty('refresh_token', 'test_refresh_token');
+      expect(authResponse).toHaveProperty(
+        'refresh_token',
+        'test_refresh_token',
+      );
       expect(authResponse).toHaveProperty('user');
       expect(authResponse.user.stellar_address).toBe(testClientPublicKey);
       expect(authResponse.user.role).toBe('USER');
@@ -166,7 +177,9 @@ describe('Stellar Authentication Integration', () => {
         isActive: true,
       });
       expect(userRepository.save).toHaveBeenCalled();
-      expect(userRepository.update).toHaveBeenCalledWith(newUser.id, { lastLogin: expect.any(Date) });
+      expect(userRepository.update).toHaveBeenCalledWith(newUser.id, {
+        lastLogin: expect.any(Date),
+      });
     });
 
     it('should authenticate existing user', async () => {
@@ -175,12 +188,13 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challengeResponse = await authController.generateStellarChallenge(challengeDto);
+      const challengeResponse =
+        await authController.generateStellarChallenge(challengeDto);
 
       // Step 2: Parse and sign transaction
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         challengeResponse.transaction,
-        testNetworkPassphrase
+        testNetworkPassphrase,
       ) as StellarSdk.Transaction;
 
       const clientKeypair = StellarSdk.Keypair.fromSecret(testClientSecret);
@@ -224,7 +238,9 @@ describe('Stellar Authentication Integration', () => {
       // Verify user was not created again
       expect(userRepository.create).not.toHaveBeenCalled();
       expect(userRepository.save).not.toHaveBeenCalled();
-      expect(userRepository.update).toHaveBeenCalledWith(existingUser.id, { lastLogin: expect.any(Date) });
+      expect(userRepository.update).toHaveBeenCalledWith(existingUser.id, {
+        lastLogin: expect.any(Date),
+      });
     });
 
     it('should reject authentication for inactive user', async () => {
@@ -233,12 +249,13 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challengeResponse = await authController.generateStellarChallenge(challengeDto);
+      const challengeResponse =
+        await authController.generateStellarChallenge(challengeDto);
 
       // Step 2: Parse and sign transaction
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         challengeResponse.transaction,
-        testNetworkPassphrase
+        testNetworkPassphrase,
       ) as StellarSdk.Transaction;
 
       const clientKeypair = StellarSdk.Keypair.fromSecret(testClientSecret);
@@ -257,8 +274,9 @@ describe('Stellar Authentication Integration', () => {
       };
       userRepository.findOne.mockResolvedValueOnce(inactiveUser as any);
 
-      await expect(authController.verifyStellarAuth(verifyDto))
-        .rejects.toThrow('User account is deactivated');
+      await expect(authController.verifyStellarAuth(verifyDto)).rejects.toThrow(
+        'User account is deactivated',
+      );
     });
 
     it('should reject authentication with invalid signature', async () => {
@@ -267,12 +285,13 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challengeResponse = await authController.generateStellarChallenge(challengeDto);
+      const challengeResponse =
+        await authController.generateStellarChallenge(challengeDto);
 
       // Step 2: Parse transaction but don't sign with client key
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         challengeResponse.transaction,
-        testNetworkPassphrase
+        testNetworkPassphrase,
       ) as StellarSdk.Transaction;
 
       // Only server signature present, no client signature
@@ -280,8 +299,9 @@ describe('Stellar Authentication Integration', () => {
         transaction: transaction.toEnvelope().toXDR('base64'),
       };
 
-      await expect(authController.verifyStellarAuth(verifyDto))
-        .rejects.toThrow('Client signature missing or invalid');
+      await expect(authController.verifyStellarAuth(verifyDto)).rejects.toThrow(
+        'Client signature missing or invalid',
+      );
     });
 
     it('should reject authentication with expired challenge', async () => {
@@ -290,12 +310,13 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challengeResponse = await authController.generateStellarChallenge(challengeDto);
+      const challengeResponse =
+        await authController.generateStellarChallenge(challengeDto);
 
       // Parse transaction and modify time bounds to be expired
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         challengeResponse.transaction,
-        testNetworkPassphrase
+        testNetworkPassphrase,
       ) as StellarSdk.Transaction;
 
       // Set expired time bounds
@@ -312,8 +333,9 @@ describe('Stellar Authentication Integration', () => {
         transaction: transaction.toEnvelope().toXDR('base64'),
       };
 
-      await expect(authController.verifyStellarAuth(verifyDto))
-        .rejects.toThrow('Challenge transaction expired');
+      await expect(authController.verifyStellarAuth(verifyDto)).rejects.toThrow(
+        'Challenge transaction expired',
+      );
     });
   });
 
@@ -323,8 +345,9 @@ describe('Stellar Authentication Integration', () => {
         public_key: 'invalid_key_format',
       };
 
-      await expect(authController.generateStellarChallenge(challengeDto))
-        .rejects.toThrow();
+      await expect(
+        authController.generateStellarChallenge(challengeDto),
+      ).rejects.toThrow();
     });
 
     it('should generate unique challenges for each request', async () => {
@@ -332,15 +355,23 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challenge1 = await authController.generateStellarChallenge(challengeDto);
-      const challenge2 = await authController.generateStellarChallenge(challengeDto);
+      const challenge1 =
+        await authController.generateStellarChallenge(challengeDto);
+      const challenge2 =
+        await authController.generateStellarChallenge(challengeDto);
 
       expect(challenge1.transaction).not.toBe(challenge2.transaction);
-      
+
       // Both should be valid XDR
-      const tx1 = StellarSdk.TransactionBuilder.fromXDR(challenge1.transaction, testNetworkPassphrase);
-      const tx2 = StellarSdk.TransactionBuilder.fromXDR(challenge2.transaction, testNetworkPassphrase);
-      
+      const tx1 = StellarSdk.TransactionBuilder.fromXDR(
+        challenge1.transaction,
+        testNetworkPassphrase,
+      );
+      const tx2 = StellarSdk.TransactionBuilder.fromXDR(
+        challenge2.transaction,
+        testNetworkPassphrase,
+      );
+
       expect(tx1).toBeDefined();
       expect(tx2).toBeDefined();
     });
@@ -350,10 +381,11 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challengeResponse = await authController.generateStellarChallenge(challengeDto);
+      const challengeResponse =
+        await authController.generateStellarChallenge(challengeDto);
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         challengeResponse.transaction,
-        testNetworkPassphrase
+        testNetworkPassphrase,
       ) as StellarSdk.Transaction;
 
       const now = Math.floor(Date.now() / 1000);
@@ -372,16 +404,17 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challengeResponse = await authController.generateStellarChallenge(challengeDto);
+      const challengeResponse =
+        await authController.generateStellarChallenge(challengeDto);
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         challengeResponse.transaction,
-        testNetworkPassphrase
+        testNetworkPassphrase,
       ) as StellarSdk.Transaction;
 
       // Verify server signature
       const hash = transaction.hash();
       const serverKeypair = StellarSdk.Keypair.fromSecret(testServerSecret);
-      const serverSignature = transaction.signatures.find(sig => {
+      const serverSignature = transaction.signatures.find((sig) => {
         try {
           return serverKeypair.verify(hash, sig.signature());
         } catch {
@@ -397,10 +430,11 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challengeResponse = await authController.generateStellarChallenge(challengeDto);
+      const challengeResponse =
+        await authController.generateStellarChallenge(challengeDto);
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         challengeResponse.transaction,
-        testNetworkPassphrase
+        testNetworkPassphrase,
       ) as StellarSdk.Transaction;
 
       expect(transaction.sequence).toBe('0');
@@ -411,10 +445,11 @@ describe('Stellar Authentication Integration', () => {
         public_key: testClientPublicKey,
       };
 
-      const challengeResponse = await authController.generateStellarChallenge(challengeDto);
+      const challengeResponse =
+        await authController.generateStellarChallenge(challengeDto);
       const transaction = StellarSdk.TransactionBuilder.fromXDR(
         challengeResponse.transaction,
-        testNetworkPassphrase
+        testNetworkPassphrase,
       ) as StellarSdk.Transaction;
 
       expect(transaction.operations[0].name).toBe('Harvest Finance auth');

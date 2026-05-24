@@ -3,9 +3,16 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { VaultsService } from './vaults.service';
-import { Vault, VaultStatus, VaultType } from '../database/entities/vault.entity';
+import {
+  Vault,
+  VaultStatus,
+  VaultType,
+} from '../database/entities/vault.entity';
 import { Deposit, DepositStatus } from '../database/entities/deposit.entity';
-import { Withdrawal, WithdrawalStatus } from '../database/entities/withdrawal.entity';
+import {
+  Withdrawal,
+  WithdrawalStatus,
+} from '../database/entities/withdrawal.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CustomLoggerService } from '../logger/custom-logger.service';
 import { VaultGateway } from '../realtime/vault.gateway';
@@ -15,7 +22,9 @@ const VAULT_ID = '22222222-2222-2222-2222-222222222222';
 const DEPOSIT_ID = '33333333-3333-3333-3333-333333333333';
 const WITHDRAWAL_ID = '44444444-4444-4444-4444-444444444444';
 
-const buildVault = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
+const buildVault = (
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> => ({
   id: VAULT_ID,
   ownerId: USER_ID,
   type: VaultType.CROP_PRODUCTION,
@@ -49,7 +58,9 @@ describe('VaultsService — Yield Strategy Integration', () => {
   };
 
   const mockDataSource = {
-    transaction: jest.fn((cb: (em: typeof mockManager) => unknown) => cb(mockManager)),
+    transaction: jest.fn((cb: (em: typeof mockManager) => unknown) =>
+      cb(mockManager),
+    ),
   };
 
   const mockVaultRepository = {
@@ -70,17 +81,28 @@ describe('VaultsService — Yield Strategy Integration', () => {
     update: jest.fn(),
   };
 
-  const mockNotificationsService = { create: jest.fn().mockResolvedValue(undefined) };
+  const mockNotificationsService = {
+    create: jest.fn().mockResolvedValue(undefined),
+  };
   const mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
-  const mockVaultGateway = { emitDeposit: jest.fn(), emitWithdrawal: jest.fn() };
+  const mockVaultGateway = {
+    emitDeposit: jest.fn(),
+    emitWithdrawal: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VaultsService,
         { provide: getRepositoryToken(Vault), useValue: mockVaultRepository },
-        { provide: getRepositoryToken(Deposit), useValue: mockDepositRepository },
-        { provide: getRepositoryToken(Withdrawal), useValue: mockWithdrawalRepository },
+        {
+          provide: getRepositoryToken(Deposit),
+          useValue: mockDepositRepository,
+        },
+        {
+          provide: getRepositoryToken(Withdrawal),
+          useValue: mockWithdrawalRepository,
+        },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: CustomLoggerService, useValue: mockLogger },
@@ -126,7 +148,11 @@ describe('VaultsService — Yield Strategy Integration', () => {
 
     it('should route funds from user into vault and confirm deposit atomically', async () => {
       const vault = buildVault();
-      const updatedVault = buildVault({ totalDeposits: 1000, availableCapacity: 9000, utilizationPercentage: 10 });
+      const updatedVault = buildVault({
+        totalDeposits: 1000,
+        availableCapacity: 9000,
+        utilizationPercentage: 10,
+      });
 
       mockVaultRepository.findOne.mockResolvedValue(vault);
       mockDepositRepository.create.mockReturnValue(pendingDeposit);
@@ -139,13 +165,21 @@ describe('VaultsService — Yield Strategy Integration', () => {
       mockDepositRepository.update.mockResolvedValue(undefined);
       mockDepositRepository.createQueryBuilder.mockReturnValue(buildQB('1000'));
 
-      const result = await service.depositToVault(VAULT_ID, { userId: USER_ID, amount: 1000 });
+      const result = await service.depositToVault(VAULT_ID, {
+        userId: USER_ID,
+        amount: 1000,
+      });
 
       expect(result.deposit.status).toBe(DepositStatus.CONFIRMED);
       expect(result.deposit.amount).toBe(1000);
       expect(result.userTotalDeposits).toBe(1000);
       expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
-      expect(mockManager.increment).toHaveBeenCalledWith(Vault, { id: VAULT_ID }, 'totalDeposits', 1000);
+      expect(mockManager.increment).toHaveBeenCalledWith(
+        Vault,
+        { id: VAULT_ID },
+        'totalDeposits',
+        1000,
+      );
     });
 
     it('should emit real-time deposit event to strategy subscribers', async () => {
@@ -153,7 +187,10 @@ describe('VaultsService — Yield Strategy Integration', () => {
       const updatedVault = buildVault({ totalDeposits: 500 });
 
       mockVaultRepository.findOne.mockResolvedValue(vault);
-      mockDepositRepository.create.mockReturnValue({ ...pendingDeposit, amount: 500 });
+      mockDepositRepository.create.mockReturnValue({
+        ...pendingDeposit,
+        amount: 500,
+      });
       mockManager.save.mockResolvedValue({ ...pendingDeposit, amount: 500 });
       mockManager.increment.mockResolvedValue(undefined);
       mockManager.findOne.mockResolvedValue(updatedVault);
@@ -166,13 +203,23 @@ describe('VaultsService — Yield Strategy Integration', () => {
       await service.depositToVault(VAULT_ID, { userId: USER_ID, amount: 500 });
 
       expect(mockVaultGateway.emitDeposit).toHaveBeenCalledWith(
-        expect.objectContaining({ vaultId: VAULT_ID, amount: 500, userId: USER_ID }),
+        expect.objectContaining({
+          vaultId: VAULT_ID,
+          amount: 500,
+          userId: USER_ID,
+        }),
       );
     });
 
     it('should trigger large deposit alert when amount >= 10,000', async () => {
-      const vault = buildVault({ maxCapacity: 100000, availableCapacity: 100000 });
-      const updatedVault = buildVault({ totalDeposits: 10000, maxCapacity: 100000 });
+      const vault = buildVault({
+        maxCapacity: 100000,
+        availableCapacity: 100000,
+      });
+      const updatedVault = buildVault({
+        totalDeposits: 10000,
+        maxCapacity: 100000,
+      });
       const largeDeposit = { ...pendingDeposit, amount: 10000 };
       const largeConfirmed = { ...confirmedDeposit, amount: 10000 };
 
@@ -185,9 +232,14 @@ describe('VaultsService — Yield Strategy Integration', () => {
         .mockResolvedValueOnce(largeDeposit)
         .mockResolvedValueOnce(largeConfirmed);
       mockDepositRepository.update.mockResolvedValue(undefined);
-      mockDepositRepository.createQueryBuilder.mockReturnValue(buildQB('10000'));
+      mockDepositRepository.createQueryBuilder.mockReturnValue(
+        buildQB('10000'),
+      );
 
-      await service.depositToVault(VAULT_ID, { userId: USER_ID, amount: 10000 });
+      await service.depositToVault(VAULT_ID, {
+        userId: USER_ID,
+        amount: 10000,
+      });
 
       expect(mockNotificationsService.create).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Large Deposit Alert' }),
@@ -196,7 +248,11 @@ describe('VaultsService — Yield Strategy Integration', () => {
 
     it('should transition vault to FULL_CAPACITY when deposit fills strategy', async () => {
       const vault = buildVault({ totalDeposits: 9500, availableCapacity: 500 });
-      const fullVault = buildVault({ totalDeposits: 10000, isFullCapacity: true, availableCapacity: 0 });
+      const fullVault = buildVault({
+        totalDeposits: 10000,
+        isFullCapacity: true,
+        availableCapacity: 0,
+      });
       const smallDeposit = { ...pendingDeposit, amount: 500 };
       const smallConfirmed = { ...confirmedDeposit, amount: 500 };
 
@@ -210,7 +266,9 @@ describe('VaultsService — Yield Strategy Integration', () => {
         .mockResolvedValueOnce(smallDeposit)
         .mockResolvedValueOnce(smallConfirmed);
       mockDepositRepository.update.mockResolvedValue(undefined);
-      mockDepositRepository.createQueryBuilder.mockReturnValue(buildQB('10000'));
+      mockDepositRepository.createQueryBuilder.mockReturnValue(
+        buildQB('10000'),
+      );
 
       await service.depositToVault(VAULT_ID, { userId: USER_ID, amount: 500 });
 
@@ -239,12 +297,17 @@ describe('VaultsService — Yield Strategy Integration', () => {
       await service.depositToVault(VAULT_ID, { userId: USER_ID, amount: 1000 });
 
       expect(mockNotificationsService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Deposit Confirmed', userId: USER_ID }),
+        expect.objectContaining({
+          title: 'Deposit Confirmed',
+          userId: USER_ID,
+        }),
       );
     });
 
     it('should reject deposit to inactive vault strategy', async () => {
-      mockVaultRepository.findOne.mockResolvedValue(buildVault({ status: VaultStatus.INACTIVE }));
+      mockVaultRepository.findOne.mockResolvedValue(
+        buildVault({ status: VaultStatus.INACTIVE }),
+      );
 
       await expect(
         service.depositToVault(VAULT_ID, { userId: USER_ID, amount: 100 }),
@@ -252,7 +315,9 @@ describe('VaultsService — Yield Strategy Integration', () => {
     });
 
     it('should reject deposit to frozen vault strategy', async () => {
-      mockVaultRepository.findOne.mockResolvedValue(buildVault({ status: VaultStatus.FROZEN }));
+      mockVaultRepository.findOne.mockResolvedValue(
+        buildVault({ status: VaultStatus.FROZEN }),
+      );
 
       await expect(
         service.depositToVault(VAULT_ID, { userId: USER_ID, amount: 100 }),
@@ -343,7 +408,12 @@ describe('VaultsService — Yield Strategy Integration', () => {
       expect(result.withdrawal.status).toBe(WithdrawalStatus.CONFIRMED);
       expect(result.withdrawal.amount).toBe(500);
       expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
-      expect(mockManager.decrement).toHaveBeenCalledWith(Vault, { id: VAULT_ID }, 'totalDeposits', 500);
+      expect(mockManager.decrement).toHaveBeenCalledWith(
+        Vault,
+        { id: VAULT_ID },
+        'totalDeposits',
+        500,
+      );
     });
 
     it('should emit real-time withdrawal event to strategy subscribers', async () => {
@@ -362,16 +432,28 @@ describe('VaultsService — Yield Strategy Integration', () => {
       await service.withdrawFromVault(VAULT_ID, USER_ID, 500);
 
       expect(mockVaultGateway.emitWithdrawal).toHaveBeenCalledWith(
-        expect.objectContaining({ vaultId: VAULT_ID, amount: 500, userId: USER_ID }),
+        expect.objectContaining({
+          vaultId: VAULT_ID,
+          amount: 500,
+          userId: USER_ID,
+        }),
       );
     });
 
     it('should revert vault from FULL_CAPACITY to ACTIVE after withdrawal', async () => {
-      const fullVault = buildVault({ totalDeposits: 10000, status: VaultStatus.FULL_CAPACITY });
-      const updatedVault = buildVault({ totalDeposits: 9500, status: VaultStatus.FULL_CAPACITY });
+      const fullVault = buildVault({
+        totalDeposits: 10000,
+        status: VaultStatus.FULL_CAPACITY,
+      });
+      const updatedVault = buildVault({
+        totalDeposits: 9500,
+        status: VaultStatus.FULL_CAPACITY,
+      });
 
       mockVaultRepository.findOne.mockResolvedValue(fullVault);
-      mockDepositRepository.createQueryBuilder.mockReturnValue(buildQB('10000'));
+      mockDepositRepository.createQueryBuilder.mockReturnValue(
+        buildQB('10000'),
+      );
       mockWithdrawalRepository.create.mockReturnValue(pendingWithdrawal);
       mockManager.save.mockResolvedValue(pendingWithdrawal);
       mockManager.decrement.mockResolvedValue(undefined);
@@ -405,7 +487,10 @@ describe('VaultsService — Yield Strategy Integration', () => {
       await service.withdrawFromVault(VAULT_ID, USER_ID, 500);
 
       expect(mockNotificationsService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Withdrawal Confirmed', userId: USER_ID }),
+        expect.objectContaining({
+          title: 'Withdrawal Confirmed',
+          userId: USER_ID,
+        }),
       );
     });
 
@@ -471,7 +556,9 @@ describe('VaultsService — Yield Strategy Integration', () => {
     it('should throw NotFoundException for unknown vault', async () => {
       mockVaultRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.getVaultById('unknown-id')).rejects.toThrow(NotFoundException);
+      await expect(service.getVaultById('unknown-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

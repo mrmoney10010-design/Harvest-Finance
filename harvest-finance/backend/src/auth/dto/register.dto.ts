@@ -19,7 +19,8 @@ import { UserRole } from '../../database/entities/user.entity';
  * - At least one number
  * - At least one special character
  */
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
 
 export class RegisterDto {
   @ApiProperty({
@@ -50,7 +51,9 @@ export class RegisterDto {
     enum: UserRole,
     description: 'User role: FARMER, BUYER, INSPECTOR, or ADMIN',
   })
-  @IsEnum(UserRole, { message: 'Role must be FARMER, BUYER, INSPECTOR, or ADMIN' })
+  @IsEnum(UserRole, {
+    message: 'Role must be FARMER, BUYER, INSPECTOR, or ADMIN',
+  })
   @IsNotEmpty({ message: 'Role is required' })
   role: UserRole;
 

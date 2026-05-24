@@ -53,26 +53,26 @@ export class QueryYieldAnalyticsDto {
   @IsString()
   contractId?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Start date (YYYY-MM-DD)', 
-    example: '2026-04-01' 
+  @ApiPropertyOptional({
+    description: 'Start date (YYYY-MM-DD)',
+    example: '2026-04-01',
   })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'End date (YYYY-MM-DD)', 
-    example: '2026-04-30' 
+  @ApiPropertyOptional({
+    description: 'End date (YYYY-MM-DD)',
+    example: '2026-04-30',
   })
   @IsOptional()
   @IsDateString()
   endDate?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Number of days to look back (default: 30)', 
+  @ApiPropertyOptional({
+    description: 'Number of days to look back (default: 30)',
     example: 30,
-    default: 30 
+    default: 30,
   })
   @IsOptional()
   @Type(() => Number)
@@ -81,7 +81,11 @@ export class QueryYieldAnalyticsDto {
   @Max(365)
   days?: number = 30;
 
-  @ApiPropertyOptional({ description: 'Number of records to skip', example: 0, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Number of records to skip',
+    example: 0,
+    default: 0,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

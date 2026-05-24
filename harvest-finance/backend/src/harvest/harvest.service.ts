@@ -22,12 +22,18 @@ export class HarvestService implements OnModuleInit {
 
   private async initializeBlockchainConnection() {
     try {
-      const rpcUrl = this.configService.get<string>('BLOCKCHAIN_RPC_URL') || 'http://localhost:8545';
+      const rpcUrl =
+        this.configService.get<string>('BLOCKCHAIN_RPC_URL') ||
+        'http://localhost:8545';
       const privateKey = this.configService.get<string>('HARVEST_PRIVATE_KEY');
-      const controllerAddress = this.configService.get<string>('CONTROLLER_CONTRACT_ADDRESS');
+      const controllerAddress = this.configService.get<string>(
+        'CONTROLLER_CONTRACT_ADDRESS',
+      );
 
       if (!privateKey || !controllerAddress) {
-        this.logger.error('Missing blockchain configuration: HARVEST_PRIVATE_KEY or CONTROLLER_CONTRACT_ADDRESS');
+        this.logger.error(
+          'Missing blockchain configuration: HARVEST_PRIVATE_KEY or CONTROLLER_CONTRACT_ADDRESS',
+        );
         return;
       }
 
@@ -41,7 +47,11 @@ export class HarvestService implements OnModuleInit {
         'function strategies(address) view returns (address)',
       ];
 
-      this.controllerContract = new ethers.Contract(controllerAddress, controllerAbi, this.signer);
+      this.controllerContract = new ethers.Contract(
+        controllerAddress,
+        controllerAbi,
+        this.signer,
+      );
 
       this.logger.log('Blockchain connection initialized for harvest service');
     } catch (error) {
@@ -49,7 +59,9 @@ export class HarvestService implements OnModuleInit {
     }
   }
 
-  async performHarvest(vaultAddress: string): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  async performHarvest(
+    vaultAddress: string,
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
     if (this.isRunning) {
       this.logger.warn('Harvest already running, skipping duplicate execution');
       return { success: false, error: 'Harvest already running' };
@@ -66,16 +78,23 @@ export class HarvestService implements OnModuleInit {
 
     try {
       this.logger.log(`Starting harvest for vault: ${vaultAddress}`);
-      this.customLogger.log(`Harvest job started for vault ${vaultAddress}`, 'HarvestService');
+      this.customLogger.log(
+        `Harvest job started for vault ${vaultAddress}`,
+        'HarvestService',
+      );
 
       // Check if vault is registered
-      const isVaultRegistered = await this.controllerContract.vaults(vaultAddress);
+      const isVaultRegistered =
+        await this.controllerContract.vaults(vaultAddress);
       if (!isVaultRegistered) {
-        throw new Error(`Vault ${vaultAddress} is not registered with the controller`);
+        throw new Error(
+          `Vault ${vaultAddress} is not registered with the controller`,
+        );
       }
 
       // Check if strategy exists
-      const strategyAddress = await this.controllerContract.strategies(vaultAddress);
+      const strategyAddress =
+        await this.controllerContract.strategies(vaultAddress);
       if (strategyAddress === ethers.ZeroAddress) {
         throw new Error(`No strategy set for vault ${vaultAddress}`);
       }
@@ -86,22 +105,27 @@ export class HarvestService implements OnModuleInit {
 
       // Wait for confirmation
       const receipt = await tx.wait();
-      this.logger.log(`Harvest transaction confirmed in block ${receipt.blockNumber}`);
+      this.logger.log(
+        `Harvest transaction confirmed in block ${receipt.blockNumber}`,
+      );
 
       const duration = Date.now() - startTime;
       this.customLogger.log(
         `Harvest job completed successfully for vault ${vaultAddress}. Duration: ${duration}ms, TxHash: ${tx.hash}`,
-        'HarvestService'
+        'HarvestService',
       );
 
       return { success: true, txHash: tx.hash };
     } catch (error) {
       const duration = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Harvest failed for vault ${vaultAddress}: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Harvest failed for vault ${vaultAddress}: ${errorMessage}`,
+      );
       this.customLogger.log(
         `Harvest job failed for vault ${vaultAddress}. Duration: ${duration}ms, Error: ${errorMessage}`,
-        'HarvestService'
+        'HarvestService',
       );
 
       return { success: false, error: errorMessage };
@@ -110,7 +134,12 @@ export class HarvestService implements OnModuleInit {
     }
   }
 
-  async harvestAllVaults(): Promise<{ total: number; successful: number; failed: number; results: any[] }> {
+  async harvestAllVaults(): Promise<{
+    total: number;
+    successful: number;
+    failed: number;
+    results: any[];
+  }> {
     // This would need to be implemented to get all vault addresses from the database
     // For now, return empty result
     this.logger.log('harvestAllVaults called - not yet implemented');

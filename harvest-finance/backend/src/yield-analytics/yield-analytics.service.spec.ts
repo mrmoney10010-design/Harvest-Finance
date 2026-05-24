@@ -104,9 +104,13 @@ describe('YieldAnalyticsService', () => {
     });
 
     it('should handle errors during processing', async () => {
-      sorobanEventRepository.find.mockRejectedValue(new Error('Database error'));
+      sorobanEventRepository.find.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(service.processHardWorkEvents()).rejects.toThrow('Database error');
+      await expect(service.processHardWorkEvents()).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -156,7 +160,9 @@ describe('YieldAnalyticsService', () => {
       const currentPrice = 1052631578947368421n; // 1.0526...
       const previousPrice = 1050000000000000000n; // 1.05
 
-      const calculateDailyApy = (service as any).calculateDailyApy.bind(service);
+      const calculateDailyApy = (service as any).calculateDailyApy.bind(
+        service,
+      );
       const result = calculateDailyApy(currentPrice, previousPrice);
 
       expect(result).toBeCloseTo(91.7, 1); // Approximately 91.7% APY
@@ -166,7 +172,9 @@ describe('YieldAnalyticsService', () => {
       const currentPrice = 1052631578947368421n;
       const previousPrice = null;
 
-      const calculateDailyApy = (service as any).calculateDailyApy.bind(service);
+      const calculateDailyApy = (service as any).calculateDailyApy.bind(
+        service,
+      );
       const result = calculateDailyApy(currentPrice, previousPrice);
 
       expect(result).toBeNull();
@@ -176,7 +184,9 @@ describe('YieldAnalyticsService', () => {
       const currentPrice = 1052631578947368421n;
       const previousPrice = 0n;
 
-      const calculateDailyApy = (service as any).calculateDailyApy.bind(service);
+      const calculateDailyApy = (service as any).calculateDailyApy.bind(
+        service,
+      );
       const result = calculateDailyApy(currentPrice, previousPrice);
 
       expect(result).toBeNull();

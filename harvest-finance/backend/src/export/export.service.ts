@@ -1,8 +1,15 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Deposit, DepositStatus } from '../database/entities/deposit.entity';
-import { Withdrawal, WithdrawalStatus } from '../database/entities/withdrawal.entity';
+import {
+  Withdrawal,
+  WithdrawalStatus,
+} from '../database/entities/withdrawal.entity';
 import { Reward, RewardStatus } from '../database/entities/reward.entity';
 import { User, UserRole } from '../database/entities/user.entity';
 import * as fastCsv from 'fast-csv';
@@ -38,16 +45,17 @@ export class ExportService {
     const data: TransactionExportData[] = [];
 
     // 1. Fetch Deposits
-    const depositQuery = this.depositRepository.createQueryBuilder('deposit')
+    const depositQuery = this.depositRepository
+      .createQueryBuilder('deposit')
       .leftJoinAndSelect('deposit.vault', 'vault')
       .orderBy('deposit.createdAt', 'DESC');
-    
+
     if (userId) {
       depositQuery.where('deposit.userId = :userId', { userId });
     }
-    
+
     const deposits = await depositQuery.getMany();
-    deposits.forEach(d => {
+    deposits.forEach((d) => {
       data.push({
         date: d.createdAt.toISOString(),
         type: 'Deposit',
@@ -58,16 +66,17 @@ export class ExportService {
     });
 
     // 2. Fetch Withdrawals
-    const withdrawalQuery = this.withdrawalRepository.createQueryBuilder('withdrawal')
+    const withdrawalQuery = this.withdrawalRepository
+      .createQueryBuilder('withdrawal')
       .leftJoinAndSelect('withdrawal.vault', 'vault')
       .orderBy('withdrawal.createdAt', 'DESC');
-    
+
     if (userId) {
       withdrawalQuery.where('withdrawal.userId = :userId', { userId });
     }
-    
+
     const withdrawals = await withdrawalQuery.getMany();
-    withdrawals.forEach(w => {
+    withdrawals.forEach((w) => {
       data.push({
         date: w.createdAt.toISOString(),
         type: 'Withdraw',
@@ -78,17 +87,18 @@ export class ExportService {
     });
 
     // 3. Fetch Rewards (Claimed)
-    const rewardQuery = this.rewardRepository.createQueryBuilder('reward')
+    const rewardQuery = this.rewardRepository
+      .createQueryBuilder('reward')
       .leftJoinAndSelect('reward.vault', 'vault')
       .where('reward.status = :status', { status: RewardStatus.CLAIMED })
       .orderBy('reward.createdAt', 'DESC');
-    
+
     if (userId) {
       rewardQuery.andWhere('reward.userId = :userId', { userId });
     }
-    
+
     const rewards = await rewardQuery.getMany();
-    rewards.forEach(r => {
+    rewards.forEach((r) => {
       data.push({
         date: r.claimedAt?.toISOString() || r.createdAt.toISOString(),
         type: 'Reward',
@@ -99,7 +109,9 @@ export class ExportService {
     });
 
     // Sort all by date descending
-    return data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return data.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
   }
 
   /**
@@ -109,20 +121,20 @@ export class ExportService {
     return new Promise((resolve, reject) => {
       let csvContent = '';
       const stream = fastCsv.format({ headers: true });
-      
+
       stream.on('data', (chunk) => {
         csvContent += chunk.toString();
       });
-      
+
       stream.on('end', () => {
         resolve(csvContent);
       });
-      
+
       stream.on('error', (err) => {
         reject(err);
       });
 
-      data.forEach(row => stream.write(row));
+      data.forEach((row) => stream.write(row));
       stream.end();
     });
   }
@@ -150,7 +162,7 @@ export class ExportService {
       fgColor: { argb: 'FFEEEEEE' },
     };
 
-    data.forEach(row => {
+    data.forEach((row) => {
       worksheet.addRow(row);
     });
 
@@ -179,9 +191,9 @@ export class ExportService {
         .fontSize(20)
         .text('Harvest Finance - Transaction Report', { align: 'center' });
       doc.moveDown();
-      doc
-        .fontSize(10)
-        .text(`Generated on: ${new Date().toLocaleString()}`, { align: 'right' });
+      doc.fontSize(10).text(`Generated on: ${new Date().toLocaleString()}`, {
+        align: 'right',
+      });
       doc.moveDown();
 
       // Table Header

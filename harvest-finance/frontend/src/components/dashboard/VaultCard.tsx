@@ -18,6 +18,7 @@ export interface VaultProps {
   walletBalance: string;
   icon: React.ReactNode;
   strategyType?: StrategyType;
+  riskLevel?: 'Low' | 'Medium' | 'High';
   onDeposit: (vaultId: string) => void;
   onWithdraw: (vaultId: string) => void;
   shares?: number | string;

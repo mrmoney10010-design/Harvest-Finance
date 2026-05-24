@@ -74,4 +74,3 @@ export class SorobanStorageService {
     // const op = StellarSdk.Operation.extendFootprintTtl({ ... });
   }
 }
- Designing a stress test to simulate long periods of inactivity.

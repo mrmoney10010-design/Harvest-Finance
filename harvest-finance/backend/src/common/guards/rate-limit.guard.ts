@@ -3,12 +3,16 @@ import {
   CanActivate,
   ExecutionContext,
   Inject,
-  TooManyRequestsException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { RATE_LIMIT_KEY, RateLimitConfig } from '../decorators/rate-limit.decorator';
+import type { Cache } from 'cache-manager';
+import {
+  RATE_LIMIT_KEY,
+  RateLimitConfig,
+} from '../decorators/rate-limit.decorator';
 
 /**
  * Guard for custom rate limiting on sensitive endpoints
@@ -41,12 +45,13 @@ export class RateLimitGuard implements CanActivate {
     const current = await this.cacheManager.get<number>(cacheKey);
     const count = (current || 0) + 1;
 
-    if (count > config.limit) {
-      throw new TooManyRequestsException(
-        config.message ||
-          `Too many requests. Limit: ${config.limit} per ${config.ttl}s`,
-      );
-    }
+if (count > config.limit) {
+       throw new HttpException(
+         config.message ||
+           `Too many requests. Limit: ${config.limit} per ${config.ttl}s`,
+         HttpStatus.TOO_MANY_REQUESTS,
+       );
+     }
 
     if (count === 1) {
       await this.cacheManager.set(cacheKey, count, config.ttl * 1000);

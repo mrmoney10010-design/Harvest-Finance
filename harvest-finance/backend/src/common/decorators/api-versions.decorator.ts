@@ -1,6 +1,6 @@
 /**
  * API Version Decorator
- * 
+ *
  * Marks a controller or method as supporting specific API versions
  * Used for documentation and routing
  */

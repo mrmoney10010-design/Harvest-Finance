@@ -26,8 +26,12 @@ export class CreateCommunityAndMarketplace1700000000012 implements MigrationInte
           FOREIGN KEY ("created_by_id") REFERENCES "users"("id") ON DELETE SET NULL
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_community_groups_category" ON "community_groups" ("category")`);
-    await queryRunner.query(`CREATE INDEX "idx_community_groups_creator" ON "community_groups" ("created_by_id")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_community_groups_category" ON "community_groups" ("category")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_community_groups_creator" ON "community_groups" ("created_by_id")`,
+    );
 
     // ── Group Memberships ───────────────────────────────────────────────────
     await queryRunner.query(`
@@ -48,8 +52,12 @@ export class CreateCommunityAndMarketplace1700000000012 implements MigrationInte
           FOREIGN KEY ("group_id") REFERENCES "community_groups"("id") ON DELETE CASCADE
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_group_memberships_user" ON "group_memberships" ("user_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_group_memberships_group" ON "group_memberships" ("group_id")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_group_memberships_user" ON "group_memberships" ("user_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_group_memberships_group" ON "group_memberships" ("group_id")`,
+    );
 
     // ── Community Posts ─────────────────────────────────────────────────────
     await queryRunner.query(`
@@ -78,9 +86,15 @@ export class CreateCommunityAndMarketplace1700000000012 implements MigrationInte
           FOREIGN KEY ("author_id") REFERENCES "users"("id") ON DELETE CASCADE
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_community_posts_author" ON "community_posts" ("author_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_community_posts_group" ON "community_posts" ("group_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_community_posts_status" ON "community_posts" ("status")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_community_posts_author" ON "community_posts" ("author_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_community_posts_group" ON "community_posts" ("group_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_community_posts_status" ON "community_posts" ("status")`,
+    );
 
     // ── Community Comments ──────────────────────────────────────────────────
     await queryRunner.query(`
@@ -101,8 +115,12 @@ export class CreateCommunityAndMarketplace1700000000012 implements MigrationInte
           FOREIGN KEY ("author_id") REFERENCES "users"("id") ON DELETE CASCADE
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_community_comments_post" ON "community_comments" ("post_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_community_comments_author" ON "community_comments" ("author_id")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_community_comments_post" ON "community_comments" ("post_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_community_comments_author" ON "community_comments" ("author_id")`,
+    );
 
     // ── Post Reactions ──────────────────────────────────────────────────────
     await queryRunner.query(`
@@ -123,7 +141,9 @@ export class CreateCommunityAndMarketplace1700000000012 implements MigrationInte
           FOREIGN KEY ("post_id") REFERENCES "community_posts"("id") ON DELETE CASCADE
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_post_reactions_post" ON "post_reactions" ("post_id")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_post_reactions_post" ON "post_reactions" ("post_id")`,
+    );
 
     // ── Co-Op Listings ──────────────────────────────────────────────────────
     await queryRunner.query(`
@@ -159,9 +179,15 @@ export class CreateCommunityAndMarketplace1700000000012 implements MigrationInte
           FOREIGN KEY ("seller_id") REFERENCES "users"("id") ON DELETE CASCADE
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_coop_listings_seller" ON "coop_listings" ("seller_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_coop_listings_status" ON "coop_listings" ("status")`);
-    await queryRunner.query(`CREATE INDEX "idx_coop_listings_category" ON "coop_listings" ("category")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_coop_listings_seller" ON "coop_listings" ("seller_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_coop_listings_status" ON "coop_listings" ("status")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_coop_listings_category" ON "coop_listings" ("category")`,
+    );
 
     // ── Co-Op Orders ────────────────────────────────────────────────────────
     await queryRunner.query(`
@@ -191,10 +217,18 @@ export class CreateCommunityAndMarketplace1700000000012 implements MigrationInte
           FOREIGN KEY ("seller_id") REFERENCES "users"("id") ON DELETE CASCADE
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_coop_orders_buyer" ON "coop_orders" ("buyer_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_coop_orders_seller" ON "coop_orders" ("seller_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_coop_orders_listing" ON "coop_orders" ("listing_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_coop_orders_status" ON "coop_orders" ("status")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_coop_orders_buyer" ON "coop_orders" ("buyer_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_coop_orders_seller" ON "coop_orders" ("seller_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_coop_orders_listing" ON "coop_orders" ("listing_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_coop_orders_status" ON "coop_orders" ("status")`,
+    );
 
     // ── Co-Op Reviews ───────────────────────────────────────────────────────
     await queryRunner.query(`
@@ -216,8 +250,12 @@ export class CreateCommunityAndMarketplace1700000000012 implements MigrationInte
           FOREIGN KEY ("reviewee_id") REFERENCES "users"("id") ON DELETE CASCADE
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_coop_reviews_reviewee" ON "coop_reviews" ("reviewee_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_coop_reviews_order" ON "coop_reviews" ("order_id")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_coop_reviews_reviewee" ON "coop_reviews" ("reviewee_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_coop_reviews_order" ON "coop_reviews" ("order_id")`,
+    );
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
@@ -230,13 +268,23 @@ export class CreateCommunityAndMarketplace1700000000012 implements MigrationInte
     await queryRunner.query(`DROP TABLE IF EXISTS "group_memberships"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "community_groups"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "coop_orders_status_enum"`);
-    await queryRunner.query(`DROP TYPE IF EXISTS "coop_listings_delivery_option_enum"`);
+    await queryRunner.query(
+      `DROP TYPE IF EXISTS "coop_listings_delivery_option_enum"`,
+    );
     await queryRunner.query(`DROP TYPE IF EXISTS "coop_listings_status_enum"`);
-    await queryRunner.query(`DROP TYPE IF EXISTS "coop_listings_category_enum"`);
+    await queryRunner.query(
+      `DROP TYPE IF EXISTS "coop_listings_category_enum"`,
+    );
     await queryRunner.query(`DROP TYPE IF EXISTS "post_reactions_type_enum"`);
-    await queryRunner.query(`DROP TYPE IF EXISTS "community_posts_status_enum"`);
+    await queryRunner.query(
+      `DROP TYPE IF EXISTS "community_posts_status_enum"`,
+    );
     await queryRunner.query(`DROP TYPE IF EXISTS "community_posts_type_enum"`);
-    await queryRunner.query(`DROP TYPE IF EXISTS "group_memberships_role_enum"`);
-    await queryRunner.query(`DROP TYPE IF EXISTS "community_groups_category_enum"`);
+    await queryRunner.query(
+      `DROP TYPE IF EXISTS "group_memberships_role_enum"`,
+    );
+    await queryRunner.query(
+      `DROP TYPE IF EXISTS "community_groups_category_enum"`,
+    );
   }
 }

@@ -13,7 +13,12 @@ describe('StellarService (unit)', () => {
         {
           provide: SecretsService,
           useValue: {
-            getSecret: (key: string) => Promise.resolve(key === 'STELLAR_PLATFORM_SECRET_KEY' ? 'STESTSECRETKEY' : undefined),
+            getSecret: (key: string) =>
+              Promise.resolve(
+                key === 'STELLAR_PLATFORM_SECRET_KEY'
+                  ? 'STESTSECRETKEY'
+                  : undefined,
+              ),
           },
         },
         {
@@ -21,13 +26,15 @@ describe('StellarService (unit)', () => {
           useValue: {
             get: (key: string) => {
               if (key === 'STELLAR_NETWORK') return 'testnet';
-              if (key === 'STELLAR_PLATFORM_PUBLIC_KEY') return 'GTESTPUBLICKEY';
+              if (key === 'STELLAR_PLATFORM_PUBLIC_KEY')
+                return 'GTESTPUBLICKEY';
               return undefined;
             },
             getOrThrow: (key: string) => {
-              if (key === 'STELLAR_PLATFORM_PUBLIC_KEY') return 'GTESTPUBLICKEY';
+              if (key === 'STELLAR_PLATFORM_PUBLIC_KEY')
+                return 'GTESTPUBLICKEY';
               throw new Error(`Config ${key} not found`);
-            }
+            },
           },
         },
       ],

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import type { Cache } from 'cache-manager';
 import { Between, FindOptionsWhere, Repository } from 'typeorm';
 import axios, { AxiosInstance } from 'axios';
 import {
@@ -53,7 +53,8 @@ export class SorobanIndexerService implements OnModuleInit {
     private readonly config: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {
-    this.enabled = this.config.get<string>('SOROBAN_INDEXER_ENABLED', 'false') === 'true';
+    this.enabled =
+      this.config.get<string>('SOROBAN_INDEXER_ENABLED', 'false') === 'true';
     const network = this.config.get<string>('STELLAR_NETWORK', 'testnet');
     const defaultUrl =
       network === 'mainnet'
@@ -61,11 +62,24 @@ export class SorobanIndexerService implements OnModuleInit {
         : 'https://soroban-testnet.stellar.org';
     this.rpcUrl = this.config.get<string>('SOROBAN_RPC_URL', defaultUrl);
     this.pageSize = Math.min(
-      Math.max(parseInt(this.config.get<string>('SOROBAN_INDEXER_PAGE_SIZE', '100'), 10), 1),
+      Math.max(
+        parseInt(
+          this.config.get<string>('SOROBAN_INDEXER_PAGE_SIZE', '100'),
+          10,
+        ),
+        1,
+      ),
       1000,
     );
-    const ids = this.config.get<string>('SOROBAN_INDEXER_CONTRACT_IDS', '').trim();
-    this.filterContractIds = ids ? ids.split(',').map((s) => s.trim()).filter(Boolean) : [];
+    const ids = this.config
+      .get<string>('SOROBAN_INDEXER_CONTRACT_IDS', '')
+      .trim();
+    this.filterContractIds = ids
+      ? ids
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
 
     this.http = axios.create({
       baseURL: this.rpcUrl,
@@ -80,7 +94,9 @@ export class SorobanIndexerService implements OnModuleInit {
         .createQueryBuilder('e')
         .select('MAX(e.ledger)', 'maxLedger')
         .getRawOne<{ maxLedger: string | null }>();
-      this.lastIndexedLedger = latest?.maxLedger ? parseInt(latest.maxLedger, 10) : null;
+      this.lastIndexedLedger = latest?.maxLedger
+        ? parseInt(latest.maxLedger, 10)
+        : null;
       this.logger.log(
         `Soroban indexer initialised | enabled=${this.enabled} rpc=${this.rpcUrl} lastLedger=${this.lastIndexedLedger ?? 'none'}`,
       );
@@ -146,15 +162,23 @@ export class SorobanIndexerService implements OnModuleInit {
 
     // Bootstrap from getLatestLedger - N so we don't attempt to replay history.
     try {
-      const latest = await this.rpcCall<{ sequence: number }>('getLatestLedger', {});
-      const backoff = parseInt(this.config.get<string>('SOROBAN_INDEXER_BOOTSTRAP_LEDGERS', '120'), 10);
+      const latest = await this.rpcCall<{ sequence: number }>(
+        'getLatestLedger',
+        {},
+      );
+      const backoff = parseInt(
+        this.config.get<string>('SOROBAN_INDEXER_BOOTSTRAP_LEDGERS', '120'),
+        10,
+      );
       return Math.max(latest.sequence - backoff, 1);
     } catch {
       return 1;
     }
   }
 
-  private async fetchEvents(startLedger: number): Promise<RpcGetEventsResponse> {
+  private async fetchEvents(
+    startLedger: number,
+  ): Promise<RpcGetEventsResponse> {
     const filters: Record<string, unknown> = { type: 'contract' };
     if (this.filterContractIds.length > 0) {
       filters.contractIds = this.filterContractIds;
@@ -198,7 +222,9 @@ export class SorobanIndexerService implements OnModuleInit {
     entity.type = (ev.type as SorobanEventType) ?? SorobanEventType.CONTRACT;
     entity.contractId = ev.contractId ?? null;
     entity.ledger = ev.ledger;
-    entity.ledgerClosedAt = ev.ledgerClosedAt ? new Date(ev.ledgerClosedAt) : new Date();
+    entity.ledgerClosedAt = ev.ledgerClosedAt
+      ? new Date(ev.ledgerClosedAt)
+      : new Date();
     entity.transactionHash = ev.txHash ?? null;
     entity.pagingToken = ev.pagingToken ?? ev.id;
     entity.topics = ev.topic ?? [];
@@ -250,5 +276,28 @@ export class SorobanIndexerService implements OnModuleInit {
       totalEvents,
       lastPolledAt: this.lastPolledAt ? this.lastPolledAt.toISOString() : null,
     };
+  }
+
+  /**
+   * Get the latest ledger from the Soroban RPC
+   */
+  async getLatestLedger(): Promise<number> {
+    const result = await this.rpcCall<{ sequence: number }>('getLatestLedger', {});
+    return result.sequence;
+  }
+
+  /**
+   * Get ledger entries (storage entries) from the Soroban RPC
+   */
+  async getLedgerEntries(keys: string[]): Promise<{ entries: any[] }> {
+    const cacheKey = `soroban:rpc:getLedgerEntries:${JSON.stringify(keys)}`;
+    const cached = await this.cacheManager.get<{ entries: any[] }>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.rpcCall<{ entries: any[] }>('getLedgerEntries', { keys });
+    await this.cacheManager.set(cacheKey, result, 60 * 1000);
+    return result;
   }
 }

@@ -7,7 +7,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Vault, VaultStatus } from '../database/entities/vault.entity';
 import { Deposit, DepositStatus } from '../database/entities/deposit.entity';
-import { Withdrawal, WithdrawalStatus } from '../database/entities/withdrawal.entity';
+import {
+  Withdrawal,
+  WithdrawalStatus,
+} from '../database/entities/withdrawal.entity';
 import { DepositDto } from './dto/deposit.dto';
 import {
   DepositVaultResponseDto,
@@ -62,17 +65,22 @@ export class VaultsService {
     depositDto: DepositDto,
   ): Promise<DepositVaultResponseDto> {
     const { userId, amount, idempotencyKey } = depositDto;
-    
+
     if (idempotencyKey) {
       const existingDeposit = await this.depositRepository.findOne({
         where: { idempotencyKey, userId },
         relations: ['vault'],
       });
       if (existingDeposit) {
-        this.logger.log(`Duplicate deposit detected with idempotencyKey: ${idempotencyKey}`, 'VaultsService');
+        this.logger.log(
+          `Duplicate deposit detected with idempotencyKey: ${idempotencyKey}`,
+          'VaultsService',
+        );
         const userTotalDeposits = await this.getUserTotalDeposits(userId);
         return {
-          vault: existingDeposit.vault ? this.mapVaultToResponse(existingDeposit.vault) : null,
+          vault: existingDeposit.vault
+            ? this.mapVaultToResponse(existingDeposit.vault)
+            : null,
           deposit: this.mapDepositToResponse(existingDeposit),
           userTotalDeposits,
         };
@@ -86,7 +94,9 @@ export class VaultsService {
     // Check for unreasonably large amounts that could cause overflow
     const MAX_SAFE_DEPOSIT = 1e30; // Very large but safe number
     if (amount > MAX_SAFE_DEPOSIT) {
-      throw new BadRequestException('Deposit amount exceeds maximum allowed value');
+      throw new BadRequestException(
+        'Deposit amount exceeds maximum allowed value',
+      );
     }
 
     const vault = await this.getVaultById(vaultId);
@@ -149,7 +159,10 @@ export class VaultsService {
 
     const userTotalDeposits = await this.getUserTotalDeposits(userId);
 
-    this.logger.log(`Deposit of ${amount} confirmed into vault ${vaultId} by user ${userId}`, 'VaultsService');
+    this.logger.log(
+      `Deposit of ${amount} confirmed into vault ${vaultId} by user ${userId}`,
+      'VaultsService',
+    );
 
     this.vaultGateway.emitDeposit({
       vaultId,
@@ -301,7 +314,11 @@ export class VaultsService {
       });
 
       if (updatedVault && updatedVault.status === VaultStatus.FULL_CAPACITY) {
-        await manager.update(Vault, { id: vaultId }, { status: VaultStatus.ACTIVE });
+        await manager.update(
+          Vault,
+          { id: vaultId },
+          { status: VaultStatus.ACTIVE },
+        );
         updatedVault.status = VaultStatus.ACTIVE;
       }
 
@@ -329,7 +346,10 @@ export class VaultsService {
       type: NotificationType.DEPOSIT,
     });
 
-    this.logger.log(`Withdrawal of ${amount} confirmed from vault ${vaultId} by user ${userId}`, 'VaultsService');
+    this.logger.log(
+      `Withdrawal of ${amount} confirmed from vault ${vaultId} by user ${userId}`,
+      'VaultsService',
+    );
 
     this.vaultGateway.emitWithdrawal({
       vaultId,
@@ -342,7 +362,9 @@ export class VaultsService {
 
     return {
       withdrawal: confirmedWithdrawal,
-      vault: result.vault ? this.mapVaultToResponse(result.vault) : this.mapVaultToResponse(vault),
+      vault: result.vault
+        ? this.mapVaultToResponse(result.vault)
+        : this.mapVaultToResponse(vault),
     };
   }
 
@@ -359,7 +381,10 @@ export class VaultsService {
     };
   }
 
-  async getApyHistory(vaultId?: string, timeRange: string = '30d'): Promise<any[]> {
+  async getApyHistory(
+    vaultId?: string,
+    timeRange: string = '30d',
+  ): Promise<any[]> {
     // Calculate date range
     const now = new Date();
     let daysBack = 30;
@@ -382,7 +407,7 @@ export class VaultsService {
 
     // For now, generate mock APY data
     // In production, this would come from yield analytics data stored in database
-    const dataPoints = [];
+    const dataPoints: { date: string; apy: number; vaultId: string }[] = [];
     for (let i = 0; i < daysBack; i++) {
       const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
       // Generate somewhat realistic APY data with some variation

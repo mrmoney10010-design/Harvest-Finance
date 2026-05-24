@@ -103,7 +103,7 @@ export class CreateYieldAnalytics1700000000012 implements MigrationInterface {
     await queryRunner.query(
       `CREATE INDEX "idx_yield_analytics_7day_apy" ON "yield_analytics" ("seven_day_apy")`,
     );
-    
+
     // Create unique constraint for contract_id + date
     await queryRunner.query(
       `CREATE UNIQUE INDEX "idx_yield_analytics_contract_date" ON "yield_analytics" ("contract_id", "date")`,

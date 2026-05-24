@@ -58,7 +58,7 @@ export interface CardProps extends BaseProps, HTMLAttributes<HTMLDivElement> {
   onClick?: () => void;
 }
 
-export interface CardHeaderProps extends BaseProps, HTMLAttributes<HTMLDivElement> {
+export interface CardHeaderProps extends BaseProps, Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   title?: ReactNode;
   subtitle?: string;
   action?: ReactNode;

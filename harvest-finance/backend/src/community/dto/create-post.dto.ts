@@ -1,4 +1,10 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PostType } from '../../database/entities/community-post.entity';
 
@@ -9,7 +15,10 @@ export class CreatePostDto {
   @MaxLength(200)
   title: string;
 
-  @ApiProperty({ example: 'I have been using drip irrigation and it cut my water usage by 40%...' })
+  @ApiProperty({
+    example:
+      'I have been using drip irrigation and it cut my water usage by 40%...',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(5000)

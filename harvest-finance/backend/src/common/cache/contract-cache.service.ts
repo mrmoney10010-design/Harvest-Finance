@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import type { Cache } from 'cache-manager';
 import { Logger } from '@nestjs/common';
 
 /**
@@ -31,7 +31,9 @@ export class ContractCacheService {
       return cached;
     }
 
-    this.logger.debug(`Cache miss for vault state: ${vaultId}, fetching fresh data`);
+    this.logger.debug(
+      `Cache miss for vault state: ${vaultId}, fetching fresh data`,
+    );
     const data = await fetcher();
     await this.cacheManager.set(cacheKey, data, this.VAULT_STATE_TTL);
     return data;
@@ -52,7 +54,9 @@ export class ContractCacheService {
       return cached;
     }
 
-    this.logger.debug(`Cache miss for account info: ${publicKey}, fetching fresh data`);
+    this.logger.debug(
+      `Cache miss for account info: ${publicKey}, fetching fresh data`,
+    );
     const data = await fetcher();
     await this.cacheManager.set(cacheKey, data, this.ACCOUNT_INFO_TTL);
     return data;
@@ -74,7 +78,9 @@ export class ContractCacheService {
       return cached;
     }
 
-    this.logger.debug(`Cache miss for contract data: ${key}, fetching fresh data`);
+    this.logger.debug(
+      `Cache miss for contract data: ${key}, fetching fresh data`,
+    );
     const data = await fetcher();
     await this.cacheManager.set(cacheKey, data, ttl);
     return data;
@@ -97,11 +103,11 @@ export class ContractCacheService {
     this.logger.debug(`Batch cache invalidation: ${patterns.length} entries`);
   }
 
-  /**
-   * Clear all cache (use sparingly)
-   */
+/**
+    * Clear all cache (use sparingly)
+    */
   async clear(): Promise<void> {
-    await this.cacheManager.reset();
+    await this.cacheManager.clear();
     this.logger.warn('All cache cleared');
   }
 }
