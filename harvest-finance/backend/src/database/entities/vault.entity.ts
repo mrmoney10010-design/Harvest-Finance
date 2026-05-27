@@ -20,10 +20,53 @@ export enum VaultType {
   EMERGENCY_FUND = 'EMERGENCY_FUND',
 }
 
+/**
+ * Lifecycle states for a Vault and the valid transitions between them.
+ *
+ * State transition table:
+ * ┌────────────────┬──────────────────────────────────────────────────────────────────┐
+ * │ From           │ To (trigger)                                                     │
+ * ├────────────────┼──────────────────────────────────────────────────────────────────┤
+ * │ ACTIVE         │ → INACTIVE      (owner deactivates / vault expires at maturity)  │
+ * │ ACTIVE         │ → FROZEN        (admin freezes due to compliance or dispute)     │
+ * │ ACTIVE         │ → FULL_CAPACITY (totalDeposits >= maxCapacity, see isFullCapacity)│
+ * │ INACTIVE       │ → ACTIVE        (owner re-activates the vault)                   │
+ * │ FROZEN         │ → ACTIVE        (admin unfreezes after issue is resolved)         │
+ * │ FULL_CAPACITY  │ → ACTIVE        (a deposit is withdrawn, freeing space)           │
+ * └────────────────┴──────────────────────────────────────────────────────────────────┘
+ *
+ * ASCII diagram:
+ *
+ *                 ┌──────────────────────────────────────┐
+ *                 │                                      ▼
+ *   deactivate  INACTIVE ◄──── ACTIVE ────► FROZEN  (admin freeze)
+ *   re-activate   │              ▲  │                    │
+ *                 └──────────────┘  └──► FULL_CAPACITY   │ (admin unfreeze)
+ *                                         │              │
+ *                                         └──────────────┘
+ *                                    (withdrawal frees space)
+ *
+ * Notes:
+ *  - FULL_CAPACITY is set automatically; it is NOT a manual admin action.
+ *  - FROZEN takes precedence — a frozen vault cannot accept deposits even
+ *    if capacity is available.
+ *  - Transitions to FROZEN are always permitted regardless of current state
+ *    to allow emergency intervention.
+ */
 export enum VaultStatus {
+  /** Vault is open and accepting deposits up to maxCapacity. */
   ACTIVE = 'ACTIVE',
+
+  /** Vault has been deactivated by its owner or reached its maturityDate.
+   *  No new deposits are accepted; existing funds remain accessible. */
   INACTIVE = 'INACTIVE',
+
+  /** Vault is locked by an administrator (e.g. compliance review or dispute).
+   *  All deposit and withdrawal operations are blocked until unfrozen. */
   FROZEN = 'FROZEN',
+
+  /** totalDeposits >= maxCapacity. Set automatically by the deposit service.
+   *  Transitions back to ACTIVE once enough funds are withdrawn to free capacity. */
   FULL_CAPACITY = 'FULL_CAPACITY',
 }
 
