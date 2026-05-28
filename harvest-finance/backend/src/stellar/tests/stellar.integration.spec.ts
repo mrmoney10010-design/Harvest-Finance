@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import * as StellarSdk from 'stellar-sdk';
+import * as StellarSdk from '@stellar/stellar-sdk';
 import { StellarService } from '../services/stellar.service';
 import { SecretsService } from '../../common/secrets/secrets.service';
 import { BadRequestException } from '@nestjs/common';
