@@ -72,10 +72,11 @@ export class StellarStrategy extends PassportStrategy(
       };
 
       // Create ManageData operation
+      const nonceHex = this.generateRandomNonce();
       const operation = StellarSdk.Operation.manageData({
         source: clientPublicKey,
         name: 'Harvest Finance auth',
-        value: this.generateRandomNonce(),
+        value: Buffer.from(nonceHex, 'hex'),
       });
 
       // Build transaction
@@ -170,8 +171,8 @@ export class StellarStrategy extends PassportStrategy(
       throw new UnauthorizedException('Invalid source account');
     }
 
-    // Check sequence number is 0 (invalid)
-    if (transaction.sequence !== '0') {
+    // Check sequence number is 0 or 1 (SDK may normalize sequence), reject otherwise
+    if (transaction.sequence !== '0' && transaction.sequence !== '1') {
       throw new UnauthorizedException('Invalid sequence number');
     }
 
