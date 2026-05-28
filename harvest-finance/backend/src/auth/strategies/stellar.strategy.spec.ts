@@ -81,7 +81,9 @@ describe('StellarStrategy', () => {
     it('should use testnet network by default', () => {
       expect(strategy).toBeDefined();
       const publicKey = strategy.getServerPublicKey();
-      expect(publicKey).toBe(StellarSdk.Keypair.fromSecret(testServerSecret).publicKey());
+      expect(publicKey).toBe(
+        StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(),
+      );
     });
   });
 
@@ -99,10 +101,13 @@ describe('StellarStrategy', () => {
       ) as StellarSdk.Transaction;
 
       // transaction source is server account
-      const serverPublicKey = StellarSdk.Keypair.fromSecret(testServerSecret).publicKey();
+      const serverPublicKey =
+        StellarSdk.Keypair.fromSecret(testServerSecret).publicKey();
       expect(transaction.source).toBe(serverPublicKey);
       // operation source should be client
-      expect((transaction.operations[0] as any).source).toBe(testClientPublicKey);
+      expect((transaction.operations[0] as any).source).toBe(
+        testClientPublicKey,
+      );
       // SDK normalizes sequence to '1' when building from an account with '0'
       expect(transaction.sequence).toBe('1');
       expect(transaction.operations.length).toBe(1);
@@ -248,12 +253,21 @@ describe('StellarStrategy', () => {
     it('should throw error for invalid source account', async () => {
       // Build a new transaction with invalid source account
       const invalidServerPub = StellarSdk.Keypair.random().publicKey();
-      const serverAccountInvalid = new StellarSdk.Account(invalidServerPub, '0');
-      const txInvalidSource = new StellarSdk.TransactionBuilder(serverAccountInvalid, {
-        fee: StellarSdk.BASE_FEE,
-        networkPassphrase: testNetworkPassphrase,
-        timebounds: { minTime: '0', maxTime: (Math.floor(Date.now() / 1000) + 300).toString() },
-      })
+      const serverAccountInvalid = new StellarSdk.Account(
+        invalidServerPub,
+        '0',
+      );
+      const txInvalidSource = new StellarSdk.TransactionBuilder(
+        serverAccountInvalid,
+        {
+          fee: StellarSdk.BASE_FEE,
+          networkPassphrase: testNetworkPassphrase,
+          timebounds: {
+            minTime: '0',
+            maxTime: (Math.floor(Date.now() / 1000) + 300).toString(),
+          },
+        },
+      )
         .addOperation(
           StellarSdk.Operation.manageData({
             source: testClientPublicKey,
@@ -274,11 +288,17 @@ describe('StellarStrategy', () => {
 
     it('should throw error for invalid sequence number', async () => {
       // Build a new transaction with sequence '1'
-      const serverAccountSeq = new StellarSdk.Account(StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(), '1');
+      const serverAccountSeq = new StellarSdk.Account(
+        StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(),
+        '1',
+      );
       const txInvalidSeq = new StellarSdk.TransactionBuilder(serverAccountSeq, {
         fee: StellarSdk.BASE_FEE,
         networkPassphrase: testNetworkPassphrase,
-        timebounds: { minTime: '0', maxTime: (Math.floor(Date.now() / 1000) + 300).toString() },
+        timebounds: {
+          minTime: '0',
+          maxTime: (Math.floor(Date.now() / 1000) + 300).toString(),
+        },
       })
         .addOperation(
           StellarSdk.Operation.manageData({
@@ -302,12 +322,18 @@ describe('StellarStrategy', () => {
 
     it('should throw error for expired transaction', async () => {
       // Build a new expired transaction
-      const serverAccount = new StellarSdk.Account(StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(), '0');
+      const serverAccount = new StellarSdk.Account(
+        StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(),
+        '0',
+      );
       const pastTime = Math.floor(Date.now() / 1000) - 1000;
       const txExpired = new StellarSdk.TransactionBuilder(serverAccount, {
         fee: StellarSdk.BASE_FEE,
         networkPassphrase: testNetworkPassphrase,
-        timebounds: { minTime: (pastTime - 300).toString(), maxTime: pastTime.toString() },
+        timebounds: {
+          minTime: (pastTime - 300).toString(),
+          maxTime: pastTime.toString(),
+        },
       })
         .addOperation(
           StellarSdk.Operation.manageData({
@@ -330,11 +356,17 @@ describe('StellarStrategy', () => {
 
     it('should throw error for invalid operation type', async () => {
       // Build a transaction with a payment operation
-      const serverAccount = new StellarSdk.Account(StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(), '0');
+      const serverAccount = new StellarSdk.Account(
+        StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(),
+        '0',
+      );
       const txPayment = new StellarSdk.TransactionBuilder(serverAccount, {
         fee: StellarSdk.BASE_FEE,
         networkPassphrase: testNetworkPassphrase,
-        timebounds: { minTime: '0', maxTime: (Math.floor(Date.now() / 1000) + 300).toString() },
+        timebounds: {
+          minTime: '0',
+          maxTime: (Math.floor(Date.now() / 1000) + 300).toString(),
+        },
       })
         .addOperation(
           StellarSdk.Operation.payment({
@@ -358,11 +390,17 @@ describe('StellarStrategy', () => {
 
     it('should throw error for missing server signature', async () => {
       // Build a valid transaction but only sign with client
-      const serverAccount = new StellarSdk.Account(StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(), '0');
+      const serverAccount = new StellarSdk.Account(
+        StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(),
+        '0',
+      );
       const tx = new StellarSdk.TransactionBuilder(serverAccount, {
         fee: StellarSdk.BASE_FEE,
         networkPassphrase: testNetworkPassphrase,
-        timebounds: { minTime: '0', maxTime: (Math.floor(Date.now() / 1000) + 300).toString() },
+        timebounds: {
+          minTime: '0',
+          maxTime: (Math.floor(Date.now() / 1000) + 300).toString(),
+        },
       })
         .addOperation(
           StellarSdk.Operation.manageData({
@@ -399,7 +437,9 @@ describe('StellarStrategy', () => {
   describe('getServerPublicKey', () => {
     it('should return the server public key', () => {
       const publicKey = strategy.getServerPublicKey();
-      expect(publicKey).toBe(StellarSdk.Keypair.fromSecret(testServerSecret).publicKey());
+      expect(publicKey).toBe(
+        StellarSdk.Keypair.fromSecret(testServerSecret).publicKey(),
+      );
     });
   });
 
@@ -424,7 +464,9 @@ describe('StellarStrategy', () => {
         if (nonce.type === 'Buffer' && Array.isArray(nonce.data)) {
           nonce = Buffer.from(nonce.data).toString('hex');
         } else {
-          nonce = Buffer.isBuffer(nonce) ? nonce.toString('hex') : String(nonce);
+          nonce = Buffer.isBuffer(nonce)
+            ? nonce.toString('hex')
+            : String(nonce);
         }
       }
       expect(nonce).toMatch(/^[0-9a-f]{64}$/i); // 32 bytes = 64 hex chars
