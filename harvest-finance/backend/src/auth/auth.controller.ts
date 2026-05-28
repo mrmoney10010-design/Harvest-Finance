@@ -142,7 +142,11 @@ export class AuthController {
    */
   @Post('forgot-password')
   @UseGuards(RateLimitGuard)
-  @RateLimit({ limit: 5, ttl: 3600, message: 'Too many password reset requests. Please try again in 1 hour.' })
+  @RateLimit({
+    limit: 5,
+    ttl: 3600,
+    message: 'Too many password reset requests. Please try again in 1 hour.',
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request password reset' })
   @ApiBody({ type: ForgotPasswordDto })
@@ -164,7 +168,11 @@ export class AuthController {
    */
   @Post('reset-password')
   @UseGuards(RateLimitGuard)
-  @RateLimit({ limit: 5, ttl: 3600, message: 'Too many password reset attempts. Please try again in 1 hour.' })
+  @RateLimit({
+    limit: 5,
+    ttl: 3600,
+    message: 'Too many password reset attempts. Please try again in 1 hour.',
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password with token' })
   @ApiBody({ type: ResetPasswordDto })
@@ -236,16 +244,16 @@ export class AuthController {
     const user = await this.stellarStrategy.validate(verifyDto.transaction);
     const tokens = await this.authService['generateTokens'](user);
 
-return {
-       access_token: tokens.accessToken,
-       refresh_token: tokens.refreshToken,
-       user: {
-         id: user.id,
-         stellar_address: user.stellarAddress ?? '',
-         role: user.role,
-         full_name:
-           [user.firstName, user.lastName].filter(Boolean).join(' ') || '',
-       },
-     };
+    return {
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      user: {
+        id: user.id,
+        stellar_address: user.stellarAddress ?? '',
+        role: user.role,
+        full_name:
+          [user.firstName, user.lastName].filter(Boolean).join(' ') || '',
+      },
+    };
   }
 }
