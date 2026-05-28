@@ -4,16 +4,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { Strategy as PassportStrategyBase } from 'passport-strategy';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { User, UserRole } from '../../database/entities/user.entity';
-
-// Minimal placeholder strategy class for PassportStrategy
-class StellarPlaceholderStrategy {
-  authenticate() {}
-}
 
 export interface StellarPayload {
   stellar_address: string;
@@ -23,9 +19,22 @@ export interface StellarPayload {
 
 @Injectable()
 export class StellarStrategy extends PassportStrategy(
-  StellarPlaceholderStrategy,
+  PassportStrategyBase,
   'stellar',
 ) {
+  authenticate(req: any, options?: any): void {
+    const transactionXdr =
+      req.body?.transaction || req.query?.transaction || req.headers?.transaction;
+
+    if (!transactionXdr) {
+      return this.fail('Missing Stellar transaction', 400);
+    }
+
+    this.validate(transactionXdr)
+      .then((user) => this.success(user))
+      .catch((err) => this.fail(err, 401));
+  }
+
   private readonly serverKeypair: StellarSdk.Keypair;
   private readonly networkPassphrase: string;
   private readonly challengeTimeout: number = 300; // 5 minutes
@@ -72,10 +81,11 @@ export class StellarStrategy extends PassportStrategy(
       };
 
       // Create ManageData operation
+      const nonceHex = this.generateRandomNonce();
       const operation = StellarSdk.Operation.manageData({
         source: clientPublicKey,
         name: 'Harvest Finance auth',
-        value: this.generateRandomNonce(),
+        value: Buffer.from(nonceHex, 'hex'),
       });
 
       // Build transaction
@@ -170,8 +180,8 @@ export class StellarStrategy extends PassportStrategy(
       throw new UnauthorizedException('Invalid source account');
     }
 
-    // Check sequence number is 0 (invalid)
-    if (transaction.sequence !== '0') {
+    // Check sequence number is 0 or 1 (SDK may normalize sequence), reject otherwise
+    if (transaction.sequence !== '0' && transaction.sequence !== '1') {
       throw new UnauthorizedException('Invalid sequence number');
     }
 
