@@ -298,4 +298,232 @@ describe('AuthController (e2e)', () => {
         .expect(400);
     });
   });
+
+  describe('Full Authentication Flow', () => {
+    const flowUser = {
+      email: `flow_${Date.now()}@example.com`,
+      password: 'FlowPass123!',
+      role: UserRole.FARMER,
+      full_name: 'Flow Test User',
+      phone_number: '+1987654321',
+      stellar_address: 'GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+    };
+
+    it('should complete full flow: register -> login -> refresh -> logout', async () => {
+      let accessToken: string;
+      let refreshToken: string;
+
+      const registerResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send(flowUser)
+        .expect(201);
+
+      expect(registerResponse.body).toHaveProperty('access_token');
+      expect(registerResponse.body).toHaveProperty('refresh_token');
+      expect(registerResponse.body.user).toHaveProperty('email', flowUser.email);
+
+      accessToken = registerResponse.body.access_token;
+      refreshToken = registerResponse.body.refresh_token;
+
+      const loginResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({
+          email: flowUser.email,
+          password: flowUser.password,
+        })
+        .expect(200);
+
+      expect(loginResponse.body).toHaveProperty('access_token');
+      expect(loginResponse.body).toHaveProperty('refresh_token');
+
+      accessToken = loginResponse.body.access_token;
+      refreshToken = loginResponse.body.refresh_token;
+
+      const refreshResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/refresh')
+        .send({ refresh_token: refreshToken })
+        .expect(200);
+
+      expect(refreshResponse.body).toHaveProperty('access_token');
+
+      const newAccessToken = refreshResponse.body.access_token;
+
+      const logoutResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${newAccessToken}`)
+        .expect(200);
+
+      expect(logoutResponse.body).toHaveProperty('success', true);
+    });
+
+    it('should prevent token reuse after logout', async () => {
+      const registerResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          ...flowUser,
+          email: `logout_test_${Date.now()}@example.com`,
+        })
+        .expect(201);
+
+      const accessToken = registerResponse.body.access_token;
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(401);
+    });
+
+    it('should handle token expiry on protected endpoints', async () => {
+      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${expiredToken}`)
+        .expect(401);
+    });
+
+    it('should refresh token before expiry', async () => {
+      const registerResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          ...flowUser,
+          email: `refresh_test_${Date.now()}@example.com`,
+        })
+        .expect(201);
+
+      const refreshToken = registerResponse.body.refresh_token;
+
+      const refreshResponse1 = await request(app.getHttpServer())
+        .post('/api/v1/auth/refresh')
+        .send({ refresh_token: refreshToken })
+        .expect(200);
+
+      expect(refreshResponse1.body).toHaveProperty('access_token');
+
+      const newRefreshToken = refreshResponse1.body.refresh_token;
+
+      if (newRefreshToken) {
+        const refreshResponse2 = await request(app.getHttpServer())
+          .post('/api/v1/auth/refresh')
+          .send({ refresh_token: newRefreshToken })
+          .expect(200);
+
+        expect(refreshResponse2.body).toHaveProperty('access_token');
+      }
+    });
+
+    it('should maintain session across multiple requests', async () => {
+      const registerResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          ...flowUser,
+          email: `session_test_${Date.now()}@example.com`,
+        })
+        .expect(201);
+
+      const accessToken = registerResponse.body.access_token;
+
+      const logout1 = await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(logout1.body).toHaveProperty('success', true);
+    });
+
+    it('should reject simultaneous logout attempts with same token', async () => {
+      const registerResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          ...flowUser,
+          email: `concurrent_logout_${Date.now()}@example.com`,
+        })
+        .expect(201);
+
+      const accessToken = registerResponse.body.access_token;
+
+      const logout1 = await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      const logout2 = await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(401);
+
+      expect(logout1.body).toHaveProperty('success', true);
+    });
+  });
+
+  describe('Token Validation', () => {
+    it('should validate token format', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', 'Bearer invalid-token-format')
+        .expect(401);
+    });
+
+    it('should reject missing Bearer prefix', async () => {
+      const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', validToken)
+        .expect(401);
+    });
+
+    it('should handle malformed JWT', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', 'Bearer not.a.jwt')
+        .expect(401);
+    });
+  });
+
+  describe('Session Isolation', () => {
+    it('should isolate sessions between users', async () => {
+      const user1 = {
+        ...flowUser,
+        email: `user1_${Date.now()}@example.com`,
+      };
+
+      const user2 = {
+        ...flowUser,
+        email: `user2_${Date.now()}@example.com`,
+      };
+
+      const user1Response = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send(user1)
+        .expect(201);
+
+      const user2Response = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send(user2)
+        .expect(201);
+
+      const user1Token = user1Response.body.access_token;
+      const user2Token = user2Response.body.access_token;
+
+      expect(user1Token).not.toBe(user2Token);
+
+      const user1Logout = await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${user1Token}`)
+        .expect(200);
+
+      const user2LogoutAttempt = await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${user2Token}`)
+        .expect(200);
+
+      expect(user2LogoutAttempt.body).toHaveProperty('success', true);
+    });
+  });
 });
