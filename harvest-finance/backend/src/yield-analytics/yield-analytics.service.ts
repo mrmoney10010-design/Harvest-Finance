@@ -220,13 +220,14 @@ export class YieldAnalyticsService {
     }
 
     // Calculate daily return as percentage
-    const dailyReturn =
-      Number((currentPrice * 10000n) / previousPrice - 10000n) / 100;
+    // Use floating-point division for more precise daily return calculation
+    const dailyReturn = (Number(currentPrice) / Number(previousPrice) - 1) * 100;
 
-    // Annualize the daily return (APY = (1 + daily_return)^365 - 1)
-    const apy = Math.pow(1 + dailyReturn / 100, 365) - 1;
+    // Annualize the daily return by simple annualization (no compounding)
+    // APY percent = dailyReturn (%) * 365
+    const apyPercent = dailyReturn * 365;
 
-    return Math.round(apy * 10000) / 100; // Round to 2 decimal places
+    return Math.round(apyPercent * 100) / 100; // Round to 2 decimal places
   }
 
   /**
@@ -240,15 +241,15 @@ export class YieldAnalyticsService {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     // Get last 7 days of analytics data
-    const analytics = await this.yieldAnalyticsRepository.find({
+    const analytics = (await this.yieldAnalyticsRepository.find({
       where: {
         contractId,
         date: Between(sevenDaysAgo, currentDate),
       },
       order: { date: 'ASC' },
-    });
+    })) || [];
 
-    if (analytics.length < 2) {
+    if (!analytics || analytics.length < 2) {
       return null;
     }
 
