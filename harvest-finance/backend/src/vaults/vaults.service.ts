@@ -69,6 +69,11 @@ export class VaultsService {
   ): Promise<DepositVaultResponseDto> {
     const { userId, amount, idempotencyKey } = depositDto;
 
+    // Ensure amount is a finite number
+    if (typeof amount !== 'number' || !Number.isFinite(amount)) {
+      throw new BadRequestException('Invalid amount format');
+    }
+
     if (idempotencyKey) {
       const existingDeposit = await this.depositRepository.findOne({
         where: { idempotencyKey, userId },
@@ -289,6 +294,11 @@ export class VaultsService {
     userId: string,
     amount: number,
   ): Promise<{ withdrawal: Withdrawal; vault: VaultResponseDto }> {
+    // Ensure amount is a finite number
+    if (typeof amount !== 'number' || !Number.isFinite(amount)) {
+      throw new BadRequestException('Invalid amount format');
+    }
+
     if (amount <= 0) {
       throw new BadRequestException('Withdrawal amount must be greater than 0');
     }
