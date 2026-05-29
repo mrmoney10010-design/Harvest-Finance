@@ -299,7 +299,7 @@ export class AuthService {
       select: ['id', 'password', 'resetPasswordToken', 'resetPasswordExpires'],
     });
 
-    let user = null;
+    let user: User | null = null;
     for (const u of activeUsers) {
       if (
         u.resetPasswordToken &&

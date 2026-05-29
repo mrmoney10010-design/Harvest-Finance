@@ -77,7 +77,10 @@ describe('StellarStrategy', () => {
 
       expect(
         () => new StellarStrategy(mockConfigService, mockUserRepository as any),
-      ).toThrow('STELLAR_SERVER_SECRET environment variable is required');
+      ).toThrow(
+        'Missing required environment variable: STELLAR_SERVER_SECRET. ' +
+          'Please define it in your .env file before starting the server.',
+      );
     });
 
     it('should use testnet network by default', () => {
@@ -103,7 +106,9 @@ describe('StellarStrategy', () => {
       // transaction source is server account
       expect(transaction.source).toBe(testServerPublicKey);
       // operation source should be client
-      expect((transaction.operations[0] as any).source).toBe(testClientPublicKey);
+      expect((transaction.operations[0] as any).source).toBe(
+        testClientPublicKey,
+      );
       expect(transaction.sequence).toBe('0');
       expect(transaction.operations.length).toBe(1);
       expect(transaction.operations[0].type).toBe('manageData');
@@ -309,7 +314,10 @@ describe('StellarStrategy', () => {
       const tx = new StellarSdk.TransactionBuilder(serverAccount, {
         fee: StellarSdk.BASE_FEE,
         networkPassphrase: testNetworkPassphrase,
-        timebounds: { minTime: '0', maxTime: (Math.floor(Date.now() / 1000) + 300).toString() },
+        timebounds: {
+          minTime: '0',
+          maxTime: (Math.floor(Date.now() / 1000) + 300).toString(),
+        },
       })
         .addOperation(
           StellarSdk.Operation.manageData({
@@ -371,7 +379,9 @@ describe('StellarStrategy', () => {
         if (nonce.type === 'Buffer' && Array.isArray(nonce.data)) {
           nonce = Buffer.from(nonce.data).toString('hex');
         } else {
-          nonce = Buffer.isBuffer(nonce) ? nonce.toString('hex') : String(nonce);
+          nonce = Buffer.isBuffer(nonce)
+            ? nonce.toString('hex')
+            : String(nonce);
         }
       }
       expect(nonce).toMatch(/^[0-9a-f]{64}$/i); // 32 bytes = 64 hex chars
