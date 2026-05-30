@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { StellarService } from '../services/stellar.service';
 import { SecretsService } from '../../common/secrets/secrets.service';
+import { CustomLoggerService } from '../../logger/custom-logger.service';
 
 describe('StellarService (unit)', () => {
   let service: StellarService;
@@ -35,6 +36,16 @@ describe('StellarService (unit)', () => {
                 return 'GTESTPUBLICKEY';
               throw new Error(`Config ${key} not found`);
             },
+          },
+        },
+        {
+          provide: CustomLoggerService,
+          useValue: {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
           },
         },
       ],
