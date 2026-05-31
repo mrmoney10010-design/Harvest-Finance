@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -23,6 +24,8 @@ import { CustomLoggerService } from '../logger/custom-logger.service';
 import { VaultGateway } from '../realtime/vault.gateway';
 import { ContractCacheService } from '../common/cache/contract-cache.service';
 import { InputSanitizerService } from '../common/sanitization/input-sanitizer.service';
+import { VaultApproval } from '../database/entities/vault-approval.entity';
+import { User } from '../database/entities/user.entity';
 
 const MAX_SAFE_DEPOSIT = 1e30;
 const LARGE_DEPOSIT_THRESHOLD = 10000;
@@ -281,6 +284,10 @@ export class VaultsService {
       maturityDate: vault.maturityDate,
       lockPeriodEnd: vault.lockPeriodEnd,
       isPublic: vault.isPublic,
+      requiresMultiSignature: vault.requiresMultiSignature,
+      approvalThreshold: vault.approvalThreshold,
+      currentApprovals: vault.currentApprovals,
+      approvalStatus: vault.approvalStatus,
       createdAt: vault.createdAt,
       updatedAt: vault.updatedAt,
     };
@@ -433,5 +440,188 @@ export class VaultsService {
     }
 
     return dataPoints;
+  }
+
+  async updateVaultMultiSignatureConfig(
+    vaultId: string,
+    userId: string,
+    requiresMultiSignature: boolean,
+    approvalThreshold: number,
+  ): Promise<VaultResponseDto> {
+    const vault = await this.getVaultById(vaultId);
+
+    // Only vault owner or admin can update multi-signature config
+    if (vault.ownerId !== userId && !this.isCurrentUserAdmin(userId)) {
+      throw new UnauthorizedException('Only vault owner or admin can update multi-signature configuration');
+    }
+
+    // Validate threshold
+    if (approvalThreshold < 1 || approvalThreshold > 10) {
+      throw new BadRequestException('Approval threshold must be between 1 and 10');
+    }
+
+    await this.vaultRepository.update(vaultId, {
+      requiresMultiSignature,
+      approvalThreshold,
+      currentApprovals: requiresMultiSignature ? 0 : 0,
+    });
+
+    const updatedVault = await this.getVaultById(vaultId);
+    return this.mapVaultToResponse(updatedVault);
+  }
+
+  async requestVaultApproval(
+    vaultId: string,
+    userId: string,
+    approverUserId: string,
+  ): Promise<void> {
+    const vault = await this.getVaultById(vaultId);
+
+    // Only vault owner or admin can request approvals
+    if (vault.ownerId !== userId && !this.isCurrentUserAdmin(userId)) {
+      throw new UnauthorizedException('Only vault owner or admin can request approvals');
+    }
+
+    // Check if approver exists
+    const approver = await this.dataSource.getRepository(User).findOne({
+      where: { id: approverUserId },
+    });
+    if (!approver) {
+      throw new BadRequestException('Approver user not found');
+    }
+
+    // Check if approval already exists
+    const existingApproval = await this.dataSource.getRepository(VaultApproval).findOne({
+      where: { vaultId, userId: approverUserId },
+    });
+    if (existingApproval) {
+      throw new BadRequestException('Approval request already exists for this user');
+    }
+
+    // Create new approval request
+    await this.dataSource.getRepository(VaultApproval).save({
+      vaultId,
+      userId: approverUserId,
+      status: 'PENDING',
+      comment: null,
+    });
+
+    // Notify approver
+    await this.notificationsService.create({
+      userId: approverUserId,
+      title: 'Vault Approval Request',
+      message: `You have been requested to approve operations for vault ${vault.vaultName}.`,
+      type: NotificationType.APPROVAL,
+      adminOnly: false,
+    });
+  }
+
+  async approveVaultOperation(
+    vaultId: string,
+    userId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const vault = await this.getVaultById(vaultId);
+
+    // Only approved approvers can approve
+    const approval = await this.dataSource.getRepository(VaultApproval).findOne({
+      where: { vaultId, userId },
+      relations: ['vault'],
+    });
+
+    if (!approval) {
+      throw new BadRequestException('No pending approval request found for this user');
+    }
+
+    if (approval.status !== 'PENDING') {
+      throw new BadRequestException('Approval request is not in PENDING state');
+    }
+
+    // Update approval status
+    await this.dataSource.getRepository(VaultApproval).update(approval.id, {
+      status: 'APPROVED',
+    });
+
+    // Update vault's current approvals count
+    const vaultRepo = this.dataSource.getRepository(Vault);
+    const vaultEntity = await vaultRepo.findOne({ where: { id: vaultId } });
+    if (!vaultEntity) {
+      throw new NotFoundException('Vault not found');
+    }
+
+    const currentApprovals = vaultEntity.currentApprovals + 1;
+    await vaultRepo.update(vaultId, {
+      currentApprovals,
+    });
+
+    // Check if threshold is met
+    if (currentApprovals >= vaultEntity.approvalThreshold) {
+      // All required approvals are met
+      await this.notificationsService.create({
+        userId: vault.ownerId,
+        title: 'Vault Approvals Complete',
+        message: `All required approvals have been received for vault ${vault.vaultName}.`,
+        type: NotificationType.APPROVAL,
+        adminOnly: false,
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Vault operation approved successfully',
+    };
+  }
+
+  async pauseVault(vaultId: string, userId: string): Promise<VaultResponseDto> {
+    const vault = await this.getVaultById(vaultId);
+
+    // Only vault owner or admin can pause vault
+    if (vault.ownerId !== userId && !this.isCurrentUserAdmin(userId)) {
+      throw new UnauthorizedException('Only vault owner or admin can pause vault');
+    }
+
+    // Check if vault is already paused
+    if (vault.status === VaultStatus.FROZEN) {
+      throw new BadRequestException('Vault is already paused');
+    }
+
+    // Update vault status to FROZEN
+    await this.vaultRepository.update(vaultId, {
+      status: VaultStatus.FROZEN,
+    });
+
+    const updatedVault = await this.getVaultById(vaultId);
+    return this.mapVaultToResponse(updatedVault);
+  }
+
+  async resumeVault(vaultId: string, userId: string): Promise<VaultResponseDto> {
+    const vault = await this.getVaultById(vaultId);
+
+    // Only vault owner or admin can resume vault
+    if (vault.ownerId !== userId && !this.isCurrentUserAdmin(userId)) {
+      throw new UnauthorizedException('Only vault owner or admin can resume vault');
+    }
+
+    // Check if vault is paused
+    if (vault.status !== VaultStatus.FROZEN) {
+      throw new BadRequestException('Vault is not paused');
+    }
+
+    // Update vault status back to ACTIVE
+    await this.vaultRepository.update(vaultId, {
+      status: VaultStatus.ACTIVE,
+    });
+
+    const updatedVault = await this.getVaultById(vaultId);
+    return this.mapVaultToResponse(updatedVault);
+  }
+
+  private async isCurrentUserAdmin(userId: string): Promise<boolean> {
+    // In production, this would check the user's role in the database
+    // For now, we'll implement a simple check
+    const user = await this.dataSource.getRepository(User).findOne({
+      where: { id: userId },
+      select: ['role'],
+    });
+    return user?.role === 'ADMIN';
   }
 }

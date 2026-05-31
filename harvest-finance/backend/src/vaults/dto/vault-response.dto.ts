@@ -109,6 +109,30 @@ export class VaultResponseDto {
   isPublic: boolean;
 
   @ApiProperty({
+    example: false,
+    description: 'Whether vault requires multi-signature approval',
+  })
+  requiresMultiSignature: boolean;
+
+  @ApiProperty({
+    example: 2,
+    description: 'Number of approvals required for operations',
+  })
+  approvalThreshold: number;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Number of current approvals',
+  })
+  currentApprovals: number;
+
+  @ApiProperty({
+    example: 'PENDING',
+    description: 'Current approval status (NOT_REQUIRED, PENDING, APPROVED)',
+  })
+  approvalStatus: string;
+
+  @ApiProperty({
     example: '2023-01-01T00:00:00Z',
     description: 'Vault creation date',
   })
