@@ -25,6 +25,7 @@ import {
   DepositVaultResponseDto,
   VaultResponseDto,
 } from './dto/vault-response.dto';
+import { DepositEventResponseDto } from './dto/deposit-event-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Vaults')
@@ -101,6 +102,59 @@ export class VaultsController {
     @Request() req: any,
   ): Promise<any> {
     return this.vaultsService.withdrawFromVault(vaultId, req.user.id, amount);
+  }
+
+  @Get('deposits/history')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get authenticated user deposit event history' })
+  @ApiResponse({
+    status: 200,
+    description: 'Deposit event history retrieved successfully',
+    type: [DepositEventResponseDto],
+  })
+  async getUserDepositHistory(
+    @Request() req: any,
+    @Query('vaultId') vaultId?: string,
+  ): Promise<DepositEventResponseDto[]> {
+    return this.vaultsService.getUserDepositEventHistory(req.user.id, vaultId);
+  }
+
+  @Get('deposits/:depositId/events')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get append-only event log for a deposit' })
+  @ApiParam({
+    name: 'depositId',
+    description: 'Deposit ID (UUID)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Deposit events retrieved successfully',
+    type: [DepositEventResponseDto],
+  })
+  async getDepositEventHistory(
+    @Param('depositId') depositId: string,
+  ): Promise<DepositEventResponseDto[]> {
+    return this.vaultsService.getDepositEventHistory(depositId);
+  }
+
+  @Get(':vaultId/deposit-history')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get append-only deposit event history for a vault' })
+  @ApiParam({
+    name: 'vaultId',
+    description: 'Vault ID (UUID)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Vault deposit event history retrieved successfully',
+    type: [DepositEventResponseDto],
+  })
+  async getVaultDepositHistory(
+    @Param('vaultId') vaultId: string,
+  ): Promise<DepositEventResponseDto[]> {
+    return this.vaultsService.getVaultDepositEventHistory(vaultId);
   }
 
   @Get('my-vaults')

@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Vault, VaultStatus } from '../database/entities/vault.entity';
 import { Deposit, DepositStatus } from '../database/entities/deposit.entity';
+import { DepositEventType } from '../database/entities/deposit-event.entity';
 import {
   Withdrawal,
   WithdrawalStatus,
@@ -26,6 +27,8 @@ import { ContractCacheService } from '../common/cache/contract-cache.service';
 import { InputSanitizerService } from '../common/sanitization/input-sanitizer.service';
 import { VaultApproval } from '../database/entities/vault-approval.entity';
 import { User } from '../database/entities/user.entity';
+import { DepositEventService } from './deposit-event.service';
+import { DepositEventResponseDto } from './dto/deposit-event-response.dto';
 
 const MAX_SAFE_DEPOSIT = 1e30;
 const LARGE_DEPOSIT_THRESHOLD = 10000;
@@ -45,6 +48,7 @@ export class VaultsService {
     private vaultGateway: VaultGateway,
     private contractCache: ContractCacheService,
     private sanitizer: InputSanitizerService,
+    private depositEventService: DepositEventService,
   ) {}
 
   async getVaultById(vaultId: string): Promise<Vault> {
@@ -135,6 +139,19 @@ export class VaultsService {
     const result = await this.dataSource.transaction(async (manager) => {
       const savedDeposit = await manager.save(deposit);
 
+      await this.depositEventService.appendEvent(
+        {
+          depositId: savedDeposit.id,
+          userId,
+          vaultId,
+          eventType: DepositEventType.INITIATED,
+          amount,
+          idempotencyKey: idempotencyKey || null,
+          payload: { status: DepositStatus.PENDING },
+        },
+        manager,
+      );
+
       await manager.increment(Vault, { id: vaultId }, 'totalDeposits', amount);
 
       const updatedVault = await manager.findOne(Vault, {
@@ -196,12 +213,29 @@ export class VaultsService {
     }
 
     const stellarTransactionId: string | null = `mock_stellar_${Date.now()}`;
+    const transactionHash = `mock_tx_${Date.now()}`;
+    const confirmedAt = new Date();
 
     await this.depositRepository.update(depositId, {
       status: DepositStatus.CONFIRMED,
-      confirmedAt: new Date(),
-      transactionHash: `mock_tx_${Date.now()}`,
+      confirmedAt,
+      transactionHash,
       ...(stellarTransactionId != null ? { stellarTransactionId } : {}),
+    });
+
+    await this.depositEventService.appendEvent({
+      depositId,
+      userId: deposit.userId,
+      vaultId: deposit.vaultId,
+      eventType: DepositEventType.CONFIRMED,
+      amount: Number(deposit.amount),
+      transactionHash,
+      stellarTransactionId,
+      idempotencyKey: deposit.idempotencyKey,
+      payload: {
+        status: DepositStatus.CONFIRMED,
+        confirmedAt: confirmedAt.toISOString(),
+      },
     });
 
     const updatedDeposit = await this.depositRepository.findOne({
@@ -220,6 +254,44 @@ export class VaultsService {
     });
 
     return updatedDeposit;
+  }
+
+  async getDepositEventHistory(
+    depositId: string,
+  ): Promise<DepositEventResponseDto[]> {
+    const sanitizedDepositId = this.sanitizer.validateUUID(depositId);
+    const events =
+      await this.depositEventService.getDepositHistory(sanitizedDepositId);
+    return events.map((event) =>
+      this.depositEventService.mapEventToResponse(event),
+    );
+  }
+
+  async getUserDepositEventHistory(
+    userId: string,
+    vaultId?: string,
+  ): Promise<DepositEventResponseDto[]> {
+    const sanitizedVaultId = vaultId
+      ? this.sanitizer.validateUUID(vaultId)
+      : undefined;
+    const events = await this.depositEventService.getUserDepositHistory(
+      userId,
+      sanitizedVaultId,
+    );
+    return events.map((event) =>
+      this.depositEventService.mapEventToResponse(event),
+    );
+  }
+
+  async getVaultDepositEventHistory(
+    vaultId: string,
+  ): Promise<DepositEventResponseDto[]> {
+    const sanitizedVaultId = this.sanitizer.validateUUID(vaultId);
+    const events =
+      await this.depositEventService.getVaultDepositHistory(sanitizedVaultId);
+    return events.map((event) =>
+      this.depositEventService.mapEventToResponse(event),
+    );
   }
 
   async getUserTotalDeposits(userId: string): Promise<number> {
