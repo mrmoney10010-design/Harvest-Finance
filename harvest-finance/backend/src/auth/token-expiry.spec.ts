@@ -142,15 +142,20 @@ describe('AuthService - Token Expiry Validation', () => {
    * Helper function to simulate time passing
    * @param ms - Milliseconds to advance time
    */
+  let fakeNowMs: number;
+
   const advanceTimeByMs = (ms: number) => {
-    jest.advanceTimersByTime(ms);
+    fakeNowMs = (fakeNowMs || Date.now()) + ms;
+    jest.setSystemTime(fakeNowMs);
   };
 
   describe('Access Token Expiry (1 hour)', () => {
     const accessTokenExpirySeconds = 3600; // 1 hour
 
     it('should accept token immediately after issuance', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers('modern');
+      fakeNowMs = Date.now();
+      jest.setSystemTime(fakeNowMs);
 
       const token = createMockToken(accessTokenExpirySeconds);
       const payload = jwt.decode(token) as any;
@@ -164,9 +169,11 @@ describe('AuthService - Token Expiry Validation', () => {
     });
 
     it('should verify token is valid within its validity window (at 50% of lifetime)', async () => {
-      jest.useFakeTimers();
-      const startTime = Date.now();
+      jest.useFakeTimers('modern');
+      fakeNowMs = Date.now();
+      jest.setSystemTime(fakeNowMs);
 
+      const startTime = Date.now();
       const token = createMockToken(accessTokenExpirySeconds);
       const payload = jwt.decode(token) as any;
 
@@ -182,7 +189,9 @@ describe('AuthService - Token Expiry Validation', () => {
     });
 
     it('should accept token at 90% of its lifetime', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers('modern');
+      fakeNowMs = Date.now();
+      jest.setSystemTime(fakeNowMs);
 
       const token = createMockToken(accessTokenExpirySeconds);
       const payload = jwt.decode(token) as any;
@@ -198,7 +207,9 @@ describe('AuthService - Token Expiry Validation', () => {
     });
 
     it('should reject token exactly at expiry time', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers('modern');
+      fakeNowMs = Date.now();
+      jest.setSystemTime(fakeNowMs);
 
       const token = createMockToken(accessTokenExpirySeconds);
       const payload = jwt.decode(token) as any;
@@ -214,7 +225,9 @@ describe('AuthService - Token Expiry Validation', () => {
     });
 
     it('should reject token 1 second after expiry', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers('modern');
+      fakeNowMs = Date.now();
+      jest.setSystemTime(fakeNowMs);
 
       const token = createMockToken(accessTokenExpirySeconds);
       const payload = jwt.decode(token) as any;
@@ -230,7 +243,9 @@ describe('AuthService - Token Expiry Validation', () => {
     });
 
     it('should reject token significantly past expiry (1 day later)', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers('modern');
+      fakeNowMs = Date.now();
+      jest.setSystemTime(fakeNowMs);
 
       const token = createMockToken(accessTokenExpirySeconds);
       const payload = jwt.decode(token) as any;
@@ -246,7 +261,9 @@ describe('AuthService - Token Expiry Validation', () => {
     });
 
     it('should handle verify rejection for expired token in service', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers('modern');
+      fakeNowMs = Date.now();
+      jest.setSystemTime(fakeNowMs);
 
       const token = createMockToken(accessTokenExpirySeconds);
 
@@ -259,9 +276,7 @@ describe('AuthService - Token Expiry Validation', () => {
             }),
           );
         } catch (error) {
-          return Promise.reject(
-            new Error('jwt expired'),
-          );
+          return Promise.reject(new Error('jwt expired'));
         }
       });
 

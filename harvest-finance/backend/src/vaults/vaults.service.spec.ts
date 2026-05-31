@@ -12,6 +12,8 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { CustomLoggerService } from '../logger/custom-logger.service';
 import { VaultGateway } from '../realtime/vault.gateway';
+import { ContractCacheService } from '../common/cache/contract-cache.service';
+import { InputSanitizerService } from '../common/sanitization/input-sanitizer.service';
 
 describe('VaultsService', () => {
   let service: VaultsService;
@@ -63,6 +65,17 @@ describe('VaultsService', () => {
     emitWithdrawal: jest.fn(),
   };
 
+  const mockContractCacheService = {
+    getVaultState: jest.fn(async (id: string, cb: () => Promise<any>) => {
+      // call the provided callback to simulate cache miss and return its result
+      return await cb();
+    }),
+  };
+
+  const mockSanitizer = {
+    validateUUID: jest.fn((id: string) => id),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -80,6 +93,8 @@ describe('VaultsService', () => {
         { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: CustomLoggerService, useValue: mockLogger },
         { provide: VaultGateway, useValue: mockVaultGateway },
+        { provide: ContractCacheService, useValue: mockContractCacheService },
+        { provide: InputSanitizerService, useValue: mockSanitizer },
       ],
     }).compile();
 

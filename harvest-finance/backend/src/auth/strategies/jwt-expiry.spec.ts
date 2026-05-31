@@ -3,9 +3,9 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as jwt from 'jsonwebtoken';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
-import { User, UserRole } from '../database/entities/user.entity';
+import { JwtStrategy } from './jwt.strategy';
+import { JwtRefreshStrategy } from './jwt-refresh.strategy';
+import { User, UserRole } from '../../database/entities/user.entity';
 
 /**
  * JWT Strategy Token Expiry Tests
