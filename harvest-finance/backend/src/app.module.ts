@@ -41,6 +41,7 @@ import {
   Achievement,
   CreditScore,
   Deposit,
+  DepositEvent,
   FarmVault,
   Notification,
   Order,
@@ -76,6 +77,7 @@ import { AddInsuranceNotificationType1700000000010 } from './database/migrations
 import { CreateSorobanEvents1700000000011 } from './database/migrations/1700000000011-CreateSorobanEvents';
 import { CreateYieldAnalytics1700000000012 } from './database/migrations/1700000000012-CreateYieldAnalytics';
 import { AddSorobanEventQueryIndexes1700000000013 } from './database/migrations/1700000000013-AddSorobanEventQueryIndexes';
+import { CreateDepositEvents1700000000016 } from './database/migrations/1700000000016-CreateDepositEvents';
 import { DomainEventsModule } from './domain-events';
 
 @Module({
@@ -105,6 +107,7 @@ import { DomainEventsModule } from './domain-events';
           Vault,
           VaultDeposit,
           Deposit,
+          DepositEvent,
           Achievement,
           Reward,
           Notification,
@@ -128,6 +131,7 @@ import { DomainEventsModule } from './domain-events';
           CreateSorobanEvents1700000000011,
           CreateYieldAnalytics1700000000012,
           AddSorobanEventQueryIndexes1700000000013,
+          CreateDepositEvents1700000000016,
         ],
         synchronize: false,
         migrationsRun: false,
