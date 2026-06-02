@@ -34,6 +34,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   DepositCompletedEvent,
   DomainEventNames,
+  WithdrawalConfirmedEvent,
   WithdrawalCompletedEvent,
 } from '../domain-events';
 
@@ -678,37 +679,18 @@ export class VaultsService {
       throw new NotFoundException('Withdrawal not found after confirmation');
     }
 
-    await this.notificationsService.create(
-      NotificationHelper.withdrawalConfirmed({
-        userId,
-        amount,
-        vaultName: vault.vaultName,
-      }),
-    );
-
-    this.logger.log(
-      `Withdrawal of ${amount} confirmed from vault ${vaultId} by user ${userId}`,
-      'VaultsService',
-    );
-
-    this.vaultGateway.emitWithdrawal({
-      vaultId,
-      vaultName: vault.vaultName,
-      asset: vault.type,
-      amount,
-      userId,
-      newBalance: result.vault ? Number(result.vault.totalDeposits) : 0,
-    });
-
+    // Emit an async event for post-confirmation work (notifications, realtime, downstream domain events).
     this.eventEmitter.emit(
-      DomainEventNames.WITHDRAWAL_COMPLETED,
-      new WithdrawalCompletedEvent(
+      DomainEventNames.WITHDRAWAL_CONFIRMED,
+      new WithdrawalConfirmedEvent(
         confirmedWithdrawal.id,
         userId,
         vaultId,
         amount,
         vault.vaultName,
         result.vault ? Number(result.vault.totalDeposits) : 0,
+        confirmedWithdrawal.transactionHash,
+        confirmedWithdrawal.confirmedAt ?? new Date(),
       ),
     );
 
