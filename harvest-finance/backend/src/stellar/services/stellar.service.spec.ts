@@ -7,6 +7,7 @@ import * as StellarSdk from 'stellar-sdk';
 import {
   BadRequestException,
   InternalServerErrorException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -242,14 +243,16 @@ describe('StellarService - Escrow Creation', () => {
     });
 
     it('should throw error after max retries', async () => {
-      mockServer.submitTransaction.mockRejectedValue(
-        new Error('Persistent failure'),
-      );
+      const persistentTimeout = Object.assign(new Error('Persistent timeout'), {
+        code: 'ETIMEDOUT',
+      });
+
+      mockServer.submitTransaction.mockRejectedValue(persistentTimeout);
 
       const mockTx = {} as any;
 
       await expect(service['submitWithRetry'](mockTx, 'test')).rejects.toThrow(
-        'Persistent failure',
+        'Persistent timeout',
       );
       expect(mockServer.submitTransaction).toHaveBeenCalledTimes(3);
     });
@@ -274,6 +277,38 @@ describe('StellarService - Escrow Creation', () => {
       expect(result.hash).toBe('success');
 
       jest.useRealTimers();
+    });
+  });
+
+  describe('Horizon Circuit Breaker', () => {
+    beforeEach(() => {
+      (service as any).horizonCircuitBreaker = new CircuitBreaker({
+        name: 'stellar-horizon-test',
+        failureThreshold: 2,
+        resetTimeoutMs: 30_000,
+        shouldTrip: isRetryableStellarError,
+      });
+    });
+
+    it('opens after repeated transient Horizon failures and blocks the next call', async () => {
+      const transientFailure = {
+        response: { status: 503 },
+        message: 'Horizon unavailable',
+      };
+
+      mockServer.loadAccount.mockRejectedValue(transientFailure);
+
+      await expect(
+        service.getAccountInfo(farmerKeypair.publicKey()),
+      ).rejects.toThrow(InternalServerErrorException);
+      await expect(
+        service.getAccountInfo(farmerKeypair.publicKey()),
+      ).rejects.toThrow(InternalServerErrorException);
+      await expect(
+        service.getAccountInfo(farmerKeypair.publicKey()),
+      ).rejects.toThrow(ServiceUnavailableException);
+
+      expect(mockServer.loadAccount).toHaveBeenCalledTimes(2);
     });
   });
 
