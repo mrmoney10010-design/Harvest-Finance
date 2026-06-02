@@ -565,6 +565,60 @@ export class VaultsService {
     return vaults.map((vault) => this.mapVaultToResponse(vault));
   }
 
+  /**
+   * Creates a new vault by deep-copying configuration from an existing vault.
+   * Financial state (deposits, approvals, balances) is reset on the clone.
+   */
+  async cloneVaultFromTemplate(
+    sourceVaultId: string,
+    userId: string,
+    vaultName?: string,
+  ): Promise<VaultResponseDto> {
+    const sanitizedSourceId = this.sanitizer.validateUUID(sourceVaultId);
+    const sourceVault = await this.vaultRepository.findOne({
+      where: { id: sanitizedSourceId },
+    });
+
+    if (!sourceVault) {
+      throw new NotFoundException('Vault not found');
+    }
+
+    if (sourceVault.ownerId !== userId) {
+      throw new UnauthorizedException(
+        'Only the vault owner can clone this vault',
+      );
+    }
+
+    const resolvedName = (vaultName?.trim() ||
+      `${sourceVault.vaultName} (Copy)`).slice(0, 100);
+
+    if (!resolvedName) {
+      throw new BadRequestException('Vault name is required');
+    }
+
+    const clonedVault = this.vaultRepository.create({
+      ownerId: userId,
+      type: sourceVault.type,
+      status: VaultStatus.ACTIVE,
+      vaultName: resolvedName,
+      description: sourceVault.description,
+      symbol: sourceVault.symbol,
+      assetPair: sourceVault.assetPair,
+      totalDeposits: 0,
+      maxCapacity: sourceVault.maxCapacity,
+      interestRate: sourceVault.interestRate,
+      maturityDate: sourceVault.maturityDate,
+      lockPeriodEnd: sourceVault.lockPeriodEnd,
+      isPublic: sourceVault.isPublic,
+      requiresMultiSignature: sourceVault.requiresMultiSignature,
+      approvalThreshold: sourceVault.approvalThreshold,
+      currentApprovals: 0,
+    });
+
+    const saved = await this.vaultRepository.save(clonedVault);
+    return this.mapVaultToResponse(saved);
+  }
+
   async getPublicVaults(): Promise<VaultResponseDto[]> {
     const vaults = await this.vaultRepository.find({
       where: { isPublic: true },
