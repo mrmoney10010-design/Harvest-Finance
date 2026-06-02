@@ -69,10 +69,10 @@ export class StellarStrategy extends PassportStrategy(
   /**
    * Generate a challenge transaction for SEP-10 authentication
    */
-  async generateChallenge(clientPublicKey: string): Promise<string> {
+  generateChallenge(clientPublicKey: string): string {
     try {
       // Validate client public key
-      const clientKeypair = StellarSdk.Keypair.fromPublicKey(clientPublicKey);
+      StellarSdk.Keypair.fromPublicKey(clientPublicKey);
 
       // TransactionBuilder increments the source account sequence; start at -1
       // so the SEP-10 challenge transaction carries invalid sequence 0.
@@ -111,9 +111,8 @@ export class StellarStrategy extends PassportStrategy(
       // Return XDR
       return transaction.toEnvelope().toXDR('base64');
     } catch (error) {
-      throw new BadRequestException(
-        `Failed to generate challenge: ${error.message}`,
-      );
+      const msg = (error as Error).message || String(error);
+      throw new BadRequestException(`Failed to generate challenge: ${msg}`);
     }
   }
 
@@ -162,9 +161,8 @@ export class StellarStrategy extends PassportStrategy(
       ) {
         throw error;
       }
-      throw new UnauthorizedException(
-        `Authentication failed: ${error.message}`,
-      );
+      const msg = (error as Error).message || String(error);
+      throw new UnauthorizedException(`Authentication failed: ${msg}`);
     }
   }
 

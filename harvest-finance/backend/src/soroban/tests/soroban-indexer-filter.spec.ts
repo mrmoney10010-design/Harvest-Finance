@@ -179,6 +179,51 @@ describe('SorobanIndexerService - Filter handling', () => {
     expect(res.items[0].contractId).toBe('CX');
   });
 
+  it('filters by contractId + type combination', async () => {
+    const a = makeEvent({ contractId: 'CAB', ledger: 11, type: SorobanEventType.CONTRACT });
+    const b = makeEvent({ contractId: 'CAB', ledger: 12, type: SorobanEventType.SYSTEM });
+    const c = makeEvent({ contractId: 'CAD', ledger: 12, type: SorobanEventType.CONTRACT });
+    await repo.save([a, b, c]);
+
+    const res = await service.query({ contractId: 'CAB', type: SorobanEventType.CONTRACT });
+    expect(res.total).toBe(1);
+    expect(res.items[0].contractId).toBe('CAB');
+    expect(res.items[0].type).toBe(SorobanEventType.CONTRACT);
+  });
+
+  it('orders items with same ledger by pagingToken desc', async () => {
+    const p1 = makeEvent({ contractId: 'PX', ledger: 50, pagingToken: 'a' });
+    const p2 = makeEvent({ contractId: 'PX', ledger: 50, pagingToken: 'b' });
+    const p3 = makeEvent({ contractId: 'PX', ledger: 50, pagingToken: 'c' });
+    await repo.save([p1, p2, p3]);
+
+    const res = await service.query({ contractId: 'PX' });
+    expect(res.total).toBe(3);
+    expect(res.items.map((i) => i.pagingToken)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('supports skip and limit pagination deterministically', async () => {
+    const arr = [];
+    for (let i = 1; i <= 5; i++) {
+      arr.push(makeEvent({ contractId: 'PG', ledger: 100 + i, pagingToken: `t${i}` }));
+    }
+    await repo.save(arr);
+
+    const page = await service.query({ contractId: 'PG', skip: 1, limit: 2 });
+    expect(page.total).toBe(5);
+    // top ordered ledgers are highest: 105,104,103,102,101 -> skip 1 gives 104,103
+    expect(page.items.map((i) => i.ledger)).toEqual([104, 103]);
+  });
+
+  it('returns no results when fromLedger > toLedger (invalid range)', async () => {
+    const r1 = makeEvent({ ledger: 200 });
+    const r2 = makeEvent({ ledger: 201 });
+    await repo.save([r1, r2]);
+
+    const invalid = await service.query({ fromLedger: 300, toLedger: 100 });
+    expect(invalid.total).toBe(0);
+  });
+
   it('returns empty results when no match and handles partial/invalid inputs', async () => {
     const e1 = makeEvent({ contractId: 'Z', ledger: 100 });
     await repo.save([e1]);

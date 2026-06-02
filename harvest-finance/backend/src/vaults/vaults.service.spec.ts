@@ -157,6 +157,18 @@ describe('VaultsService', () => {
         service.withdrawFromVault('vault-1', 'user-1', 0),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should throw BadRequestException if amount is NaN', async () => {
+      await expect(
+        service.withdrawFromVault('vault-1', 'user-1', Number.NaN),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if amount is Infinity', async () => {
+      await expect(
+        service.withdrawFromVault('vault-1', 'user-1', Infinity),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('depositToVault', () => {
@@ -184,6 +196,30 @@ describe('VaultsService', () => {
 
       await expect(
         service.depositToVault('vault-1', { userId: 'user-1', amount: 0 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for NaN deposit', async () => {
+      mockVaultRepository.findOne.mockResolvedValue(mockVault);
+
+      await expect(
+        service.depositToVault('vault-1', {
+          userId: 'user-1',
+          // @ts-ignore force NaN
+          amount: Number.NaN,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for Infinity deposit', async () => {
+      mockVaultRepository.findOne.mockResolvedValue(mockVault);
+
+      await expect(
+        service.depositToVault('vault-1', {
+          userId: 'user-1',
+          // @ts-ignore force Infinity
+          amount: Infinity,
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
