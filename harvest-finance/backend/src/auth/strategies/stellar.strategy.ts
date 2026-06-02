@@ -179,8 +179,8 @@ export class StellarStrategy extends PassportStrategy(
       throw new UnauthorizedException('Invalid source account');
     }
 
-    // Check sequence number is 1 for a challenge transaction created from an account with sequence 0
-    if (transaction.sequence !== '1') {
+    // Check sequence number is 0 (invalid) or normalized to '1' by some SDK versions
+    if (transaction.sequence !== '0' && transaction.sequence !== '1') {
       throw new UnauthorizedException('Invalid sequence number');
     }
 

@@ -8,6 +8,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('StellarService - Escrow Creation', () => {
   let service: StellarService;
@@ -39,26 +40,19 @@ describe('StellarService - Escrow Creation', () => {
             get: jest.fn().mockImplementation((key, defaultValue) => {
               const config: Record<string, any> = {
                 STELLAR_NETWORK: 'testnet',
-                STELLAR_PLATFORM_PUBLIC_KEY:
-                  'GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+                STELLAR_PLATFORM_PUBLIC_KEY: platformKeypair.publicKey(),
               };
               return config[key] ?? defaultValue;
             }),
             getOrThrow: jest
               .fn()
-              .mockReturnValue(
-                'GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-              ),
+              .mockReturnValue(platformKeypair.publicKey()),
           },
         },
         {
           provide: SecretsService,
           useValue: {
-            getSecret: jest
-              .fn()
-              .mockResolvedValue(
-                'SDXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-              ),
+            getSecret: jest.fn().mockResolvedValue(platformKeypair.secret()),
           },
         },
         {
@@ -70,6 +64,7 @@ describe('StellarService - Escrow Creation', () => {
             debug: jest.fn(),
           },
         },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
