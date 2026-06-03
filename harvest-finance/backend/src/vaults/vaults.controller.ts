@@ -27,6 +27,7 @@ import { GetVaultBalanceQuery } from './cqrs/queries/get-vault-balance.query';
 import { GetVaultTransactionsQuery } from './cqrs/queries/get-vault-transactions.query';
 import { DepositDto } from './dto/deposit.dto';
 import { BatchDepositDto } from './dto/batch-deposit.dto';
+import { CloneVaultDto } from './dto/clone-vault.dto';
 import {
   BatchDepositResponseDto,
   DepositVaultResponseDto,
@@ -207,6 +208,40 @@ export class VaultsController {
     @Param('vaultId') vaultId: string,
   ): Promise<DepositEventResponseDto[]> {
     return this.vaultsService.getVaultDepositEventHistory(vaultId);
+  }
+
+  @Post(':vaultId/clone')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Clone vault configuration from an existing template vault',
+  })
+  @ApiParam({
+    name: 'vaultId',
+    description: 'Source vault ID (UUID) to copy configuration from',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({ type: CloneVaultDto, required: false })
+  @ApiResponse({
+    status: 201,
+    description: 'Vault cloned successfully',
+    type: VaultResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Only vault owner can clone',
+  })
+  @ApiResponse({ status: 404, description: 'Vault not found' })
+  async cloneVault(
+    @Param('vaultId') vaultId: string,
+    @Body() cloneVaultDto: CloneVaultDto,
+    @Request() req: any,
+  ): Promise<VaultResponseDto> {
+    return this.vaultsService.cloneVaultFromTemplate(
+      vaultId,
+      req.user.id,
+      cloneVaultDto?.vaultName,
+    );
   }
 
   @Get('my-vaults')
