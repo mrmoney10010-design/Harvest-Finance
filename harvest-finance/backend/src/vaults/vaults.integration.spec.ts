@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { VaultsService } from './vaults.service';
 import {
   Vault,
@@ -21,7 +26,9 @@ import { InputSanitizerService } from '../common/sanitization/input-sanitizer.se
 import { DepositEventService } from './deposit-event.service';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
+const OTHER_USER_ID = '99999999-9999-9999-9999-999999999999';
 const VAULT_ID = '22222222-2222-2222-2222-222222222222';
+const CLONED_VAULT_ID = '55555555-5555-5555-5555-555555555555';
 const DEPOSIT_ID = '33333333-3333-3333-3333-333333333333';
 const WITHDRAWAL_ID = '44444444-4444-4444-4444-444444444444';
 
@@ -33,11 +40,16 @@ const buildVault = (
   type: VaultType.CROP_PRODUCTION,
   status: VaultStatus.ACTIVE,
   vaultName: 'Harvest Yield Vault',
-  description: null,
-  totalDeposits: 0,
+  description: 'Template vault',
+  symbol: 'HVF',
+  assetPair: 'XLM/USDC',
+  totalDeposits: 5000,
   maxCapacity: 10000,
   interestRate: 5,
   isPublic: true,
+  requiresMultiSignature: true,
+  approvalThreshold: 2,
+  currentApprovals: 1,
   maturityDate: null,
   lockPeriodEnd: null,
   deposits: [],
@@ -69,6 +81,12 @@ describe('VaultsService — Yield Strategy Integration', () => {
   const mockVaultRepository = {
     findOne: jest.fn(),
     find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+
+  const mockEventEmitter = {
+    emit: jest.fn(),
   };
 
   const mockDepositRepository = {
@@ -128,6 +146,7 @@ describe('VaultsService — Yield Strategy Integration', () => {
         { provide: ContractCacheService, useValue: mockContractCache },
         { provide: InputSanitizerService, useValue: mockSanitizer },
         { provide: DepositEventService, useValue: mockDepositEventService },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
 
@@ -640,6 +659,97 @@ describe('VaultsService — Yield Strategy Integration', () => {
       const result = await service.getPublicVaults();
 
       expect(result).toEqual([]);
+    });
+  });
+
+  // ── Vault cloning ──────────────────────────────────────────────────────────
+
+  describe('cloneVaultFromTemplate', () => {
+    it('should create a new vault with copied config and reset financial state', async () => {
+      const sourceVault = buildVault({
+        status: VaultStatus.FULL_CAPACITY,
+        totalDeposits: 5000,
+      });
+      const savedClone = buildVault({
+        id: CLONED_VAULT_ID,
+        vaultName: 'Harvest Yield Vault (Copy)',
+        status: VaultStatus.ACTIVE,
+        totalDeposits: 0,
+        currentApprovals: 0,
+        availableCapacity: 10000,
+        utilizationPercentage: 0,
+        isFullCapacity: false,
+      });
+
+      mockVaultRepository.findOne.mockResolvedValue(sourceVault);
+      mockVaultRepository.create.mockImplementation((data) => data);
+      mockVaultRepository.save.mockResolvedValue(savedClone);
+
+      const result = await service.cloneVaultFromTemplate(VAULT_ID, USER_ID);
+
+      expect(mockVaultRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ownerId: USER_ID,
+          type: VaultType.CROP_PRODUCTION,
+          status: VaultStatus.ACTIVE,
+          vaultName: 'Harvest Yield Vault (Copy)',
+          description: 'Template vault',
+          symbol: 'HVF',
+          assetPair: 'XLM/USDC',
+          totalDeposits: 0,
+          maxCapacity: 10000,
+          interestRate: 5,
+          requiresMultiSignature: true,
+          approvalThreshold: 2,
+          currentApprovals: 0,
+        }),
+      );
+      expect(result.id).toBe(CLONED_VAULT_ID);
+      expect(result.totalDeposits).toBe(0);
+      expect(result.status).toBe(VaultStatus.ACTIVE);
+    });
+
+    it('should use a custom vault name when provided', async () => {
+      const sourceVault = buildVault();
+      const savedClone = buildVault({
+        id: CLONED_VAULT_ID,
+        vaultName: 'My Custom Clone',
+        totalDeposits: 0,
+        currentApprovals: 0,
+      });
+
+      mockVaultRepository.findOne.mockResolvedValue(sourceVault);
+      mockVaultRepository.create.mockImplementation((data) => data);
+      mockVaultRepository.save.mockResolvedValue(savedClone);
+
+      const result = await service.cloneVaultFromTemplate(
+        VAULT_ID,
+        USER_ID,
+        'My Custom Clone',
+      );
+
+      expect(mockVaultRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ vaultName: 'My Custom Clone' }),
+      );
+      expect(result.vaultName).toBe('My Custom Clone');
+    });
+
+    it('should throw NotFoundException when source vault does not exist', async () => {
+      mockVaultRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.cloneVaultFromTemplate(VAULT_ID, USER_ID),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw UnauthorizedException when user is not the owner', async () => {
+      mockVaultRepository.findOne.mockResolvedValue(
+        buildVault({ ownerId: OTHER_USER_ID }),
+      );
+
+      await expect(
+        service.cloneVaultFromTemplate(VAULT_ID, USER_ID),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
