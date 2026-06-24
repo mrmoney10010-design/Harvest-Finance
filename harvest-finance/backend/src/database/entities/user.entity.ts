@@ -8,6 +8,7 @@ import {
   OneToMany,
   OneToOne,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Order } from './order.entity';
 import { Verification } from './verification.entity';
 import { CreditScore } from './credit-score.entity';
@@ -44,6 +45,7 @@ export class User {
   email: string;
 
   @Column({ select: false })
+  @Exclude()
   password: string;
 
   @Column({
@@ -81,9 +83,11 @@ export class User {
   lastLogin: Date | null;
 
   @Column({ name: 'refresh_token', select: false, nullable: true })
+  @Exclude()
   refreshToken: string | null;
 
   @Column({ name: 'reset_password_token', select: false, nullable: true })
+  @Exclude()
   resetPasswordToken: string | null;
 
   @Column({ name: 'reset_password_expires', nullable: true })
