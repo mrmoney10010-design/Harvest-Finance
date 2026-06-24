@@ -170,6 +170,7 @@ async function bootstrap() {
       console.error('Error during graceful shutdown:', error);
       process.exit(1);
     }
+
   };
 
   // Register shutdown signal handlers
