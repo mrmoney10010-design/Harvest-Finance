@@ -17,6 +17,7 @@ import { CreateSorobanEvents1700000000011 } from './migrations/1700000000011-Cre
 import { AddSorobanEventQueryIndexes1700000000013 } from './migrations/1700000000013-AddSorobanEventQueryIndexes';
 import { AddSuspendedVaultStatusAndStellarAccount1700000000018 } from './migrations/1700000000018-AddSuspendedVaultStatusAndStellarAccount';
 import { CreateIndexerState1700000000019 } from './migrations/1700000000019-CreateIndexerState';
+import { AddUserLoginLockout1700000000020 } from './migrations/1700000000020-AddUserLoginLockout';
 
 // Load environment variables explicitly
 config();
@@ -59,6 +60,7 @@ const options: DataSourceOptions = {
     AddSorobanEventQueryIndexes1700000000013,
     AddSuspendedVaultStatusAndStellarAccount1700000000018,
     CreateIndexerState1700000000019,
+    AddUserLoginLockout1700000000020,
     path.join(__dirname, '/migrations/*.{ts,js}'),
   ],
   // CRITICAL SAFETY: synchronize is strictly disabled outside of explicit integration testing pipelines

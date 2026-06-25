@@ -87,6 +87,7 @@ import { AddSorobanEventQueryIndexes1700000000013 } from './database/migrations/
 import { CreateDepositEvents1700000000016 } from './database/migrations/1700000000016-CreateDepositEvents';
 import { AddSuspendedVaultStatusAndStellarAccount1700000000018 } from './database/migrations/1700000000018-AddSuspendedVaultStatusAndStellarAccount';
 import { CreateIndexerState1700000000019 } from './database/migrations/1700000000019-CreateIndexerState';
+import { AddUserLoginLockout1700000000020 } from './database/migrations/1700000000020-AddUserLoginLockout';
 import { DomainEventsModule } from './domain-events';
 import { DomainEventHandlersModule } from './common/events';
 import { WebhooksModule } from './webhooks/webhooks.module';
@@ -149,6 +150,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
           CreateDepositEvents1700000000016,
           AddSuspendedVaultStatusAndStellarAccount1700000000018,
           CreateIndexerState1700000000019,
+          AddUserLoginLockout1700000000020,
         ],
         synchronize: false,
         migrationsRun: false,
