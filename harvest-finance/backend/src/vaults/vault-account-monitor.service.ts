@@ -12,6 +12,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 @Injectable()
 export class VaultAccountMonitorService implements OnModuleInit {
   private readonly logger = new Logger(VaultAccountMonitorService.name);
+  private running = false;
 
   constructor(
     @InjectRepository(Vault)
@@ -31,6 +32,19 @@ export class VaultAccountMonitorService implements OnModuleInit {
   }
 
   async checkAllVaults(): Promise<void> {
+    if (this.running) {
+      this.logger.warn('Vault account check already in progress, skipping this cycle');
+      return;
+    }
+    this.running = true;
+    try {
+      await this.runVaultChecks();
+    } finally {
+      this.running = false;
+    }
+  }
+
+  private async runVaultChecks(): Promise<void> {
     this.logger.log('Running vault account merge detection scan');
 
     const vaults = await this.vaultRepository.find({
@@ -45,6 +59,7 @@ export class VaultAccountMonitorService implements OnModuleInit {
       await this.checkSingleVault(vault);
     }
   }
+
 
   async checkSingleVault(vault: Vault): Promise<void> {
     try {
@@ -69,7 +84,10 @@ export class VaultAccountMonitorService implements OnModuleInit {
       status: VaultStatus.SUSPENDED,
     });
 
-    this.logger.warn(
+    // Audit trail: structured error-level log consumed by ops monitoring.
+    // No dedicated audit_log table exists in this project; this log entry is
+    // the verifiable record of the vault_account_merged event.
+    this.logger.error(
       JSON.stringify({
         event: 'vault_account_merged',
         vaultId: vault.id,
@@ -79,11 +97,25 @@ export class VaultAccountMonitorService implements OnModuleInit {
       }),
     );
 
+    const alertTitle = 'Vault Stellar Account Merged';
+    const alertMessage = `Vault ${vault.id} (${vault.vaultName}) has been suspended because its linked Stellar account (${vault.stellarAccountAddress}) no longer exists on-chain. The account has likely been merged. Immediate review required.`;
+
+    // Notify the vault owner
     await this.notificationsService.create({
       userId: vault.ownerId,
+      adminOnly: false,
+      title: alertTitle,
+      message: alertMessage,
+      type: NotificationType.SYSTEM,
+    });
+
+    // Broadcast to platform admins via adminOnly record (surfaced in admin dashboard
+    // via NotificationsService.findAdminNotifications() / admin API endpoint)
+    await this.notificationsService.create({
+      userId: null,
       adminOnly: true,
-      title: 'Vault Stellar Account Merged',
-      message: `Vault ${vault.id} (${vault.vaultName}) has been suspended because its linked Stellar account (${vault.stellarAccountAddress}) no longer exists on-chain. The account has likely been merged. Immediate review required.`,
+      title: alertTitle,
+      message: alertMessage,
       type: NotificationType.SYSTEM,
     });
   }

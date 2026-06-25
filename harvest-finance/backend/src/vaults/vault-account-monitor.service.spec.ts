@@ -82,10 +82,26 @@ describe('VaultAccountMonitorService', () => {
 
       expect(mockStellarService.getAccountInfo).toHaveBeenCalledWith(vault.stellarAccountAddress);
     });
+
+    it('skips concurrent execution when already running', async () => {
+      let resolvePending: () => void;
+      const pending = new Promise<void>((res) => { resolvePending = res; });
+
+      mockVaultRepository.find.mockReturnValueOnce(pending.then(() => []));
+
+      const first = service.checkAllVaults();
+      // Second call fires while first is still awaiting the repository
+      const second = service.checkAllVaults();
+      resolvePending!();
+      await Promise.all([first, second]);
+
+      // Repository should only be called once despite two concurrent calls
+      expect(mockVaultRepository.find).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('checkSingleVault', () => {
-    it('suspends vault and creates notification when account returns 404', async () => {
+    it('suspends vault and creates owner + admin notifications when account returns 404', async () => {
       const vault = makeVault();
       mockStellarService.getAccountInfo.mockRejectedValue(
         new BadRequestException('Stellar resource not found (context: getAccountInfo(GABC...))'),
@@ -98,13 +114,26 @@ describe('VaultAccountMonitorService', () => {
       expect(mockVaultRepository.update).toHaveBeenCalledWith(vault.id, {
         status: VaultStatus.SUSPENDED,
       });
+
+      // Owner notification
       expect(mockNotificationsService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: vault.ownerId,
+          adminOnly: false,
+          type: NotificationType.SYSTEM,
+        }),
+      );
+
+      // Admin broadcast notification
+      expect(mockNotificationsService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: null,
           adminOnly: true,
           type: NotificationType.SYSTEM,
         }),
       );
+
+      expect(mockNotificationsService.create).toHaveBeenCalledTimes(2);
     });
 
     it('does not suspend vault when getAccountInfo succeeds', async () => {

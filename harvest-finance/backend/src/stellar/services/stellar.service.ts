@@ -1198,9 +1198,6 @@ export class StellarService implements OnModuleInit {
       const selected = cappedByMax ? maxFee : withBuffer;
 
       if (cappedByMax) {
-        this.logger.warn(
-          `Fee cap exceeded: estimated ${withBuffer} stroops > cap ${maxFee} stroops. Operation queued for retry when fee cap is exceeded.`,
-        );
         throw new FeeCapExceededException(withBuffer, maxFee);
       }
 

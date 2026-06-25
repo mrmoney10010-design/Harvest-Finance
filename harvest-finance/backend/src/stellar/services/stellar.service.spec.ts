@@ -576,10 +576,15 @@ describe('StellarService - getBaseFee', () => {
     await expect((service as any).getBaseFee()).rejects.toThrow(FeeCapExceededException);
   });
 
-  it('logs queue warning when fee exceeds cap', async () => {
+  it('does not log before throwing when fee exceeds cap (exception carries the message)', async () => {
     mockFeeStats(10000);
-    await expect((service as any).getBaseFee()).rejects.toThrow(FeeCapExceededException);
-    expect(warnSpy).toHaveBeenCalledWith(
+    await expect((service as any).getBaseFee()).rejects.toThrow(
+      expect.objectContaining({
+        message: expect.stringContaining('Operation queued for retry when fee cap is exceeded'),
+      }),
+    );
+    // No misleading warn should fire before the throw
+    expect(warnSpy).not.toHaveBeenCalledWith(
       expect.stringContaining('Operation queued for retry when fee cap is exceeded'),
     );
   });
