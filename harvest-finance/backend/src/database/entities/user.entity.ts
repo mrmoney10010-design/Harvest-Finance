@@ -12,6 +12,7 @@ import { Exclude } from 'class-transformer';
 import { Order } from './order.entity';
 import { Verification } from './verification.entity';
 import { CreditScore } from './credit-score.entity';
+import { UserOAuthLink } from './user-oauth-link.entity';
 
 /**
  * User roles in the agricultural marketplace
@@ -37,6 +38,8 @@ export enum UserRole {
 @Index('idx_users_role', ['role'])
 @Index('idx_users_stellar_address', ['stellarAddress'])
 @Index('idx_users_solana_address', ['solanaAddress'])
+@Index('idx_users_ethereum_address', ['ethereumAddress'])
+@Index('idx_users_polygon_address', ['polygonAddress'])
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -60,6 +63,12 @@ export class User {
 
   @Column({ name: 'solana_address', nullable: true })
   solanaAddress: string | null;
+
+  @Column({ name: 'ethereum_address', nullable: true })
+  ethereumAddress: string | null;
+
+  @Column({ name: 'polygon_address', nullable: true })
+  polygonAddress: string | null;
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
@@ -116,4 +125,8 @@ export class User {
   /** Credit score for farmers */
   @OneToOne(() => CreditScore, (creditScore) => creditScore.farmer)
   creditScore: CreditScore;
+
+  /** OAuth provider links */
+  @OneToMany(() => UserOAuthLink, (link) => link.user)
+  oauthLinks: UserOAuthLink[];
 }
