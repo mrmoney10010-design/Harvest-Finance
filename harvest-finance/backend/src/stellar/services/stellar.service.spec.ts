@@ -580,7 +580,7 @@ describe('StellarService - getBaseFee', () => {
     mockFeeStats(10000);
     await expect((service as any).getBaseFee()).rejects.toThrow(FeeCapExceededException);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Operation would be queued for retry'),
+      expect.stringContaining('Operation queued for retry when fee cap is exceeded'),
     );
   });
 
@@ -597,6 +597,20 @@ describe('StellarService - getBaseFee', () => {
     mockFeeStats(4000);
     const fee = await (service as any).getBaseFee();
     expect(fee).toBe('4400');
+  });
+
+  it('throws FeeCapExceededException when custom cap is exceeded', async () => {
+    // Set cap to 5000, p90=5000 → buffered=5500 → exceeds cap → exception
+    mockConfigGet.mockImplementation((key: string, defaultValue?: any) => {
+      if (key === 'STELLAR_MAX_FEE_STROOPS') return 5000;
+      const config: Record<string, any> = {
+        STELLAR_NETWORK: 'testnet',
+        STELLAR_PLATFORM_PUBLIC_KEY: platformKeypair.publicKey(),
+      };
+      return config[key] ?? defaultValue;
+    });
+    mockFeeStats(5000);
+    await expect((service as any).getBaseFee()).rejects.toThrow(FeeCapExceededException);
   });
 
   it('falls back to 100 stroops when fee stats are unavailable', async () => {

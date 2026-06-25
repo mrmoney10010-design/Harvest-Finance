@@ -34,10 +34,10 @@ import { CircuitBreaker, CircuitBreakerOpenError, CircuitBreakerStateChange } fr
 import { isRetryableStellarError } from '../utils/stellar-retry';
 import { retry } from '../../common/utils/retry';
 
-export class FeeCapExceededException extends BadRequestException {
+export class FeeCapExceededException extends ServiceUnavailableException {
   constructor(withBuffer: number, maxFee: number) {
     super(
-      `Fee cap exceeded: estimated ${withBuffer} stroops > cap ${maxFee} stroops. Operation queued for retry.`,
+      `Fee cap exceeded: estimated ${withBuffer} stroops > cap ${maxFee} stroops. Operation queued for retry when fee cap is exceeded.`,
     );
   }
 }
@@ -1197,16 +1197,16 @@ export class StellarService implements OnModuleInit {
       const cappedByMax = withBuffer > maxFee;
       const selected = cappedByMax ? maxFee : withBuffer;
 
-      this.logger.log(
-        `Fee selected | p90=${p90} stroops | buffered=${withBuffer} | cap=${maxFee} | selected=${selected} | capped=${cappedByMax}`,
-      );
-
       if (cappedByMax) {
         this.logger.warn(
-          `Fee cap exceeded: estimated ${withBuffer} stroops > cap ${maxFee} stroops. Operation would be queued for retry.`,
+          `Fee cap exceeded: estimated ${withBuffer} stroops > cap ${maxFee} stroops. Operation queued for retry when fee cap is exceeded.`,
         );
         throw new FeeCapExceededException(withBuffer, maxFee);
       }
+
+      this.logger.log(
+        `Fee selected | p90=${p90} stroops | buffered=${withBuffer} | cap=${maxFee} | selected=${selected} | capped=${cappedByMax}`,
+      );
 
       return String(selected);
     } catch (err) {
