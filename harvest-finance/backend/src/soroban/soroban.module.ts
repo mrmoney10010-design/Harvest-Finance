@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { SorobanEvent } from '../database/entities/soroban-event.entity';
+import { IndexerState } from '../database/entities/indexer-state.entity';
 import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
 import { SorobanController } from './soroban.controller';
@@ -12,7 +13,7 @@ import { SorobanIndexerService } from './soroban-indexer.service';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([SorobanEvent]),
+    TypeOrmModule.forFeature([SorobanEvent, IndexerState]),
     AuthModule,
     CommonModule,
     CacheModule.registerAsync({

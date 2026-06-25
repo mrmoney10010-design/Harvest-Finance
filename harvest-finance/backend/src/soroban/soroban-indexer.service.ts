@@ -4,12 +4,13 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import { Between, FindOptionsWhere, Repository } from 'typeorm';
+import { Between, DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import axios, { AxiosInstance } from 'axios';
 import {
   SorobanEvent,
   SorobanEventType,
 } from '../database/entities/soroban-event.entity';
+import { IndexerState } from '../database/entities/indexer-state.entity';
 import {
   QuerySorobanEventsDto,
   IndexerStatusDto,
@@ -46,12 +47,16 @@ export class SorobanIndexerService implements OnModuleInit {
   private lastIndexedLedger: number | null = null;
   private lastPolledAt: Date | null = null;
   private running = false;
+  private persistedCursors: Map<string, string> = new Map();
 
   constructor(
     @InjectRepository(SorobanEvent)
     private readonly eventRepository: Repository<SorobanEvent>,
+    @InjectRepository(IndexerState)
+    private readonly indexerStateRepository: Repository<IndexerState>,
     private readonly config: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly dataSource: DataSource,
   ) {
     this.enabled =
       this.config.get<string>('SOROBAN_INDEXER_ENABLED', 'false') === 'true';
@@ -90,6 +95,18 @@ export class SorobanIndexerService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
+      // Load persisted cursors from indexer_state
+      const states = await this.indexerStateRepository.find();
+      if (states.length > 0) {
+        this.persistedCursors = new Map(
+          states.map((s) => [s.contractId, s.lastCursor]),
+        );
+        this.logger.log(
+          `Soroban indexer resumed from ${states.length} persisted cursor(s)`,
+        );
+      }
+
+      // Also load lastIndexedLedger for fallback ledger-based startup
       const latest = await this.eventRepository
         .createQueryBuilder('e')
         .select('MAX(e.ledger)', 'maxLedger')
@@ -102,7 +119,7 @@ export class SorobanIndexerService implements OnModuleInit {
       );
     } catch (err) {
       this.logger.warn(
-        `Failed to resolve last indexed ledger (table may not yet exist): ${(err as Error).message}`,
+        `Failed to load indexer state: ${(err as Error).message}`,
       );
     }
   }
@@ -145,7 +162,42 @@ export class SorobanIndexerService implements OnModuleInit {
     }
 
     const entities = response.events.map((ev) => this.toEntity(ev));
-    const saved = await this.persist(entities);
+
+    // Last event's pagingToken is the new cursor
+    const lastEvent = entities[entities.length - 1];
+    const newCursor = lastEvent.pagingToken;
+    const cursorKey =
+      this.filterContractIds.length === 1
+        ? this.filterContractIds[0]
+        : '__global__';
+
+    // Atomic transaction: save events + update cursor
+    const saved = await this.dataSource.transaction(async (manager) => {
+      // Upsert events (idempotent by event_id)
+      const result = await manager
+        .createQueryBuilder()
+        .insert()
+        .into(SorobanEvent)
+        .values(entities as any)
+        .orIgnore()
+        .execute();
+      const savedCount = result.identifiers.filter(
+        (id) => id !== undefined,
+      ).length;
+
+      // Upsert cursor state atomically with event writes
+      await manager.upsert(
+        IndexerState,
+        { contractId: cursorKey, lastCursor: newCursor, updatedAt: new Date() },
+        ['contractId'],
+      );
+
+      return savedCount;
+    });
+
+    // Update in-memory cursor map after successful transaction
+    this.persistedCursors.set(cursorKey, newCursor);
+
     const maxLedgerInBatch = entities.reduce(
       (max, e) => (e.ledger > max ? e.ledger : max),
       this.lastIndexedLedger ?? 0,
@@ -184,6 +236,22 @@ export class SorobanIndexerService implements OnModuleInit {
       filters.contractIds = this.filterContractIds;
     }
 
+    // Determine cursor key for this run
+    const cursorKey =
+      this.filterContractIds.length === 1
+        ? this.filterContractIds[0]
+        : '__global__';
+    const cursor = this.persistedCursors.get(cursorKey);
+
+    if (cursor) {
+      // Resume from cursor (cursor-based pagination — startLedger is mutually exclusive)
+      return this.rpcCall<RpcGetEventsResponse>('getEvents', {
+        filters: [filters],
+        pagination: { cursor, limit: this.pageSize },
+      });
+    }
+
+    // No cursor yet: use ledger-based start (existing behavior)
     return this.rpcCall<RpcGetEventsResponse>('getEvents', {
       startLedger,
       filters: [filters],

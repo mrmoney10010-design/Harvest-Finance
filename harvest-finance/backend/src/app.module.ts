@@ -61,6 +61,7 @@ import {
   Withdrawal,
   YieldAnalytics,
 } from './database/entities';
+import { IndexerState } from './database/entities/indexer-state.entity';
 import { CommunityPost } from './database/entities/community-post.entity';
 import { CommunityComment } from './database/entities/community-comment.entity';
 import { PostReaction } from './database/entities/post-reaction.entity';
@@ -85,6 +86,7 @@ import { CreateYieldAnalytics1700000000012 } from './database/migrations/1700000
 import { AddSorobanEventQueryIndexes1700000000013 } from './database/migrations/1700000000013-AddSorobanEventQueryIndexes';
 import { CreateDepositEvents1700000000016 } from './database/migrations/1700000000016-CreateDepositEvents';
 import { AddSuspendedVaultStatusAndStellarAccount1700000000018 } from './database/migrations/1700000000018-AddSuspendedVaultStatusAndStellarAccount';
+import { CreateIndexerState1700000000019 } from './database/migrations/1700000000019-CreateIndexerState';
 import { DomainEventsModule } from './domain-events';
 import { DomainEventHandlersModule } from './common/events';
 import { WebhooksModule } from './webhooks/webhooks.module';
@@ -129,6 +131,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
           InsurancePlan,
           InsuranceSubscription,
           SorobanEvent,
+          IndexerState,
           YieldAnalytics,
         ],
         migrations: [
@@ -145,6 +148,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
           AddSorobanEventQueryIndexes1700000000013,
           CreateDepositEvents1700000000016,
           AddSuspendedVaultStatusAndStellarAccount1700000000018,
+          CreateIndexerState1700000000019,
         ],
         synchronize: false,
         migrationsRun: false,

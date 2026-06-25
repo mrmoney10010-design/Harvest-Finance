@@ -9,12 +9,14 @@ import { Verification } from './entities/verification.entity';
 import { CreditScore } from './entities/credit-score.entity';
 import { Deposit } from './entities/deposit.entity';
 import { SorobanEvent } from './entities/soroban-event.entity';
+import { IndexerState } from './entities/indexer-state.entity';
 import { Vault } from './entities/vault.entity';
 import { VaultDeposit } from './entities/vault-deposit.entity';
 import { CreateInitialSchema1700000000000 } from './migrations/1700000000000-CreateInitialSchema';
 import { CreateSorobanEvents1700000000011 } from './migrations/1700000000011-CreateSorobanEvents';
 import { AddSorobanEventQueryIndexes1700000000013 } from './migrations/1700000000013-AddSorobanEventQueryIndexes';
 import { AddSuspendedVaultStatusAndStellarAccount1700000000018 } from './migrations/1700000000018-AddSuspendedVaultStatusAndStellarAccount';
+import { CreateIndexerState1700000000019 } from './migrations/1700000000019-CreateIndexerState';
 
 // Load environment variables explicitly
 config();
@@ -46,6 +48,7 @@ const options: DataSourceOptions = {
     CreditScore,
     Deposit,
     SorobanEvent,
+    IndexerState,
     Vault,
     VaultDeposit,
   ],
@@ -55,6 +58,7 @@ const options: DataSourceOptions = {
     CreateSorobanEvents1700000000011,
     AddSorobanEventQueryIndexes1700000000013,
     AddSuspendedVaultStatusAndStellarAccount1700000000018,
+    CreateIndexerState1700000000019,
     path.join(__dirname, '/migrations/*.{ts,js}'),
   ],
   // CRITICAL SAFETY: synchronize is strictly disabled outside of explicit integration testing pipelines
