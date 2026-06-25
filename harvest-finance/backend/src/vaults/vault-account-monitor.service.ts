@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull, Equal } from 'typeorm';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { Vault, VaultStatus } from '../database/entities/vault.entity';
@@ -34,21 +34,14 @@ export class VaultAccountMonitorService implements OnModuleInit {
     this.logger.log('Running vault account merge detection scan');
 
     const vaults = await this.vaultRepository.find({
-      where: [
-        { status: VaultStatus.ACTIVE },
-        { status: VaultStatus.INACTIVE },
-        { status: VaultStatus.FROZEN },
-        { status: VaultStatus.FULL_CAPACITY },
-      ],
+      select: ['id', 'stellarAccountAddress', 'status', 'ownerId', 'vaultName'],
+      where: {
+        stellarAccountAddress: Not(IsNull()),
+        status: Not(Equal(VaultStatus.SUSPENDED)),
+      },
     });
 
     for (const vault of vaults) {
-      if (!vault.stellarAccountAddress) {
-        continue;
-      }
-      if (vault.status === VaultStatus.SUSPENDED) {
-        continue;
-      }
       await this.checkSingleVault(vault);
     }
   }
@@ -58,8 +51,9 @@ export class VaultAccountMonitorService implements OnModuleInit {
       await this.stellarService.getAccountInfo(vault.stellarAccountAddress!);
     } catch (err) {
       if (
-        err instanceof BadRequestException &&
-        err.message.toLowerCase().includes('not found')
+        (err instanceof BadRequestException &&
+          err.message.toLowerCase().includes('not found')) ||
+        (err as any)?.status === 404
       ) {
         await this.suspendVault(vault);
       } else {
@@ -86,6 +80,7 @@ export class VaultAccountMonitorService implements OnModuleInit {
     );
 
     await this.notificationsService.create({
+      userId: vault.ownerId,
       adminOnly: true,
       title: 'Vault Stellar Account Merged',
       message: `Vault ${vault.id} (${vault.vaultName}) has been suspended because its linked Stellar account (${vault.stellarAccountAddress}) no longer exists on-chain. The account has likely been merged. Immediate review required.`,

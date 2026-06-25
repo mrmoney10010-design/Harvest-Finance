@@ -14,6 +14,7 @@ import { VaultDeposit } from './entities/vault-deposit.entity';
 import { CreateInitialSchema1700000000000 } from './migrations/1700000000000-CreateInitialSchema';
 import { CreateSorobanEvents1700000000011 } from './migrations/1700000000011-CreateSorobanEvents';
 import { AddSorobanEventQueryIndexes1700000000013 } from './migrations/1700000000013-AddSorobanEventQueryIndexes';
+import { AddSuspendedVaultStatusAndStellarAccount1700000000018 } from './migrations/1700000000018-AddSuspendedVaultStatusAndStellarAccount';
 
 // Load environment variables explicitly
 config();
@@ -53,6 +54,7 @@ const options: DataSourceOptions = {
     CreateInitialSchema1700000000000,
     CreateSorobanEvents1700000000011,
     AddSorobanEventQueryIndexes1700000000013,
+    AddSuspendedVaultStatusAndStellarAccount1700000000018,
     path.join(__dirname, '/migrations/*.{ts,js}'),
   ],
   // CRITICAL SAFETY: synchronize is strictly disabled outside of explicit integration testing pipelines

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
+import { Not, IsNull, Equal } from 'typeorm';
 import { Vault, VaultStatus } from '../database/entities/vault.entity';
 import { NotificationType } from '../database/entities/notification.entity';
 import { VaultAccountMonitorService } from './vault-account-monitor.service';
@@ -31,6 +32,7 @@ function makeVault(overrides: Partial<Vault> = {}): Vault {
     vaultName: 'Test Vault',
     status: VaultStatus.ACTIVE,
     stellarAccountAddress: 'GABC1234567890123456789012345678901234567890123456',
+    ownerId: 'user-1',
     ...overrides,
   } as Vault;
 }
@@ -55,25 +57,23 @@ describe('VaultAccountMonitorService', () => {
   });
 
   describe('checkAllVaults', () => {
-    it('skips vaults with no stellarAccountAddress', async () => {
-      const vault = makeVault({ stellarAccountAddress: null });
-      mockVaultRepository.find.mockResolvedValue([vault]);
+    it('queries with correct select and where clause', async () => {
+      mockVaultRepository.find.mockResolvedValue([]);
 
       await service.checkAllVaults();
 
-      expect(mockStellarService.getAccountInfo).not.toHaveBeenCalled();
+      expect(mockVaultRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.arrayContaining(['id', 'stellarAccountAddress', 'status', 'ownerId', 'vaultName']),
+          where: expect.objectContaining({
+            stellarAccountAddress: Not(IsNull()),
+            status: Not(Equal(VaultStatus.SUSPENDED)),
+          }),
+        }),
+      );
     });
 
-    it('skips vaults already SUSPENDED', async () => {
-      const vault = makeVault({ status: VaultStatus.SUSPENDED });
-      mockVaultRepository.find.mockResolvedValue([vault]);
-
-      await service.checkAllVaults();
-
-      expect(mockStellarService.getAccountInfo).not.toHaveBeenCalled();
-    });
-
-    it('checks vaults that have a stellarAccountAddress and are not suspended', async () => {
+    it('checks vaults returned by the repository', async () => {
       const vault = makeVault();
       mockVaultRepository.find.mockResolvedValue([vault]);
       mockStellarService.getAccountInfo.mockResolvedValue({ publicKey: vault.stellarAccountAddress });
@@ -100,6 +100,7 @@ describe('VaultAccountMonitorService', () => {
       });
       expect(mockNotificationsService.create).toHaveBeenCalledWith(
         expect.objectContaining({
+          userId: vault.ownerId,
           adminOnly: true,
           type: NotificationType.SYSTEM,
         }),
@@ -114,6 +115,20 @@ describe('VaultAccountMonitorService', () => {
 
       expect(mockVaultRepository.update).not.toHaveBeenCalled();
       expect(mockNotificationsService.create).not.toHaveBeenCalled();
+    });
+
+    it('suspends vault when error has status 404 (fallback check)', async () => {
+      const vault = makeVault();
+      const err = Object.assign(new Error('Not Found'), { status: 404 });
+      mockStellarService.getAccountInfo.mockRejectedValue(err);
+      mockVaultRepository.update.mockResolvedValue({});
+      mockNotificationsService.create.mockResolvedValue({});
+
+      await service.checkSingleVault(vault);
+
+      expect(mockVaultRepository.update).toHaveBeenCalledWith(vault.id, {
+        status: VaultStatus.SUSPENDED,
+      });
     });
 
     it('does not suspend vault on non-404 errors', async () => {
@@ -140,9 +155,9 @@ describe('VaultAccountMonitorService', () => {
       expect(mockNotificationsService.create).not.toHaveBeenCalled();
     });
 
-    it('is idempotent — already-SUSPENDED vault is skipped in checkAllVaults', async () => {
-      const vault = makeVault({ status: VaultStatus.SUSPENDED });
-      mockVaultRepository.find.mockResolvedValue([vault]);
+    it('is idempotent — checkAllVaults excludes SUSPENDED vaults via WHERE clause', async () => {
+      // The repository WHERE clause filters out SUSPENDED vaults; simulate empty result
+      mockVaultRepository.find.mockResolvedValue([]);
 
       await service.checkAllVaults();
 
