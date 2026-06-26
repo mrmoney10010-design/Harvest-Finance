@@ -9,7 +9,6 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { validateEnvironment } from './common/config/env.validation';
 import { buildThrottlerOptions } from './common/config/throttler.config';
 import { CommonModule } from './common/common.module';
 import { RequestValidationMiddleware } from './common/middleware/request-validation.middleware';
@@ -24,7 +23,7 @@ import { HealthModule } from './health/health.module';
 import { OrdersModule } from './orders/orders.module';
 import { VerificationModule } from './verification/verification.module';
 import { DatabaseModule } from './database/database.module';
-import { LoggerMiddleware } from './logger/logger.middleware';
+import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware';
 import { LoggerModule } from './logger/logger.module';
 import { MultiChainModule } from './multi-chain/multi-chain.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
@@ -85,6 +84,8 @@ import { CreateSorobanEvents1700000000011 } from './database/migrations/17000000
 import { CreateYieldAnalytics1700000000012 } from './database/migrations/1700000000012-CreateYieldAnalytics';
 import { AddSorobanEventQueryIndexes1700000000013 } from './database/migrations/1700000000013-AddSorobanEventQueryIndexes';
 import { CreateDepositEvents1700000000016 } from './database/migrations/1700000000016-CreateDepositEvents';
+import { CreateVaultReservations1700000000018 } from './database/migrations/1700000000018-CreateVaultReservations';
+import { VaultReservation } from './vaults/entities/vault-reservation.entity';
 import { CreateVaultApyHistory1700000000017 } from './database/migrations/1700000000017-CreateVaultApyHistory';
 import { DomainEventsModule } from './domain-events';
 import { DomainEventHandlersModule } from './common/events';
@@ -92,7 +93,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
+    ConfigModule.forRoot({ isGlobal: true }),
     DomainEventsModule,
     ObservabilityModule,
     AppConfigModule,
@@ -131,6 +132,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
           InsuranceSubscription,
           SorobanEvent,
           YieldAnalytics,
+          VaultReservation,
           VaultApyHistory,
         ],
         migrations: [
@@ -146,6 +148,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
           CreateYieldAnalytics1700000000012,
           AddSorobanEventQueryIndexes1700000000013,
           CreateDepositEvents1700000000016,
+          CreateVaultReservations1700000000018,
           CreateVaultApyHistory1700000000017,
         ],
         synchronize: false,
@@ -200,7 +203,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(RequestValidationMiddleware, LoggerMiddleware)
+      .apply(RequestValidationMiddleware, HttpLoggerMiddleware)
       .forRoutes('*');
   }
 }
