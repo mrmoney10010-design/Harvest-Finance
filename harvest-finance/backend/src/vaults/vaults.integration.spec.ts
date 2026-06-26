@@ -16,6 +16,8 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { CustomLoggerService } from '../logger/custom-logger.service';
 import { VaultGateway } from '../realtime/vault.gateway';
+import { ContractCacheService } from '../common/cache/contract-cache.service';
+import { InputSanitizerService } from '../common/sanitization/input-sanitizer.service';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const VAULT_ID = '22222222-2222-2222-2222-222222222222';
@@ -89,6 +91,12 @@ describe('VaultsService — Yield Strategy Integration', () => {
     emitDeposit: jest.fn(),
     emitWithdrawal: jest.fn(),
   };
+  const mockContractCacheService = {
+    getVaultState: jest.fn().mockImplementation(async (_id: string, fn: () => Promise<any>) => fn()),
+  };
+  const mockInputSanitizerService = {
+    validateUUID: jest.fn().mockReturnValue(VAULT_ID),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -107,6 +115,11 @@ describe('VaultsService — Yield Strategy Integration', () => {
         { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: CustomLoggerService, useValue: mockLogger },
         { provide: VaultGateway, useValue: mockVaultGateway },
+        { provide: ContractCacheService, useValue: mockContractCacheService },
+        {
+          provide: InputSanitizerService,
+          useValue: mockInputSanitizerService,
+        },
       ],
     }).compile();
 

@@ -40,14 +40,14 @@ describe('StellarService - Escrow Creation', () => {
               const config: Record<string, any> = {
                 STELLAR_NETWORK: 'testnet',
                 STELLAR_PLATFORM_PUBLIC_KEY:
-                  'GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+              'GBA7YZYNTFFSQG2GKSHLKXG52V6XQN4U2635D56IM6SBS5YZTMUKZEAX',
               };
               return config[key] ?? defaultValue;
             }),
             getOrThrow: jest
               .fn()
               .mockReturnValue(
-                'GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+                'GBA7YZYNTFFSQG2GKSHLKXG52V6XQN4U2635D56IM6SBS5YZTMUKZEAX',
               ),
           },
         },
@@ -57,7 +57,7 @@ describe('StellarService - Escrow Creation', () => {
             getSecret: jest
               .fn()
               .mockResolvedValue(
-                'SDXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+                'SASKYIAHYSNY6FNEH3BF7XIOKORRJU3CEEMJB4LM6FHZ7CTYY2ATDREH',
               ),
           },
         },
