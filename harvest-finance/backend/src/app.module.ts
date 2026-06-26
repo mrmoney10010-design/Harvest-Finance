@@ -9,7 +9,6 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { validateEnvironment } from './common/config/env.validation';
 import { buildThrottlerOptions } from './common/config/throttler.config';
 import { CommonModule } from './common/common.module';
 import { RequestValidationMiddleware } from './common/middleware/request-validation.middleware';
@@ -92,7 +91,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
+    ConfigModule.forRoot({ isGlobal: true }),
     DomainEventsModule,
     ObservabilityModule,
     AppConfigModule,
