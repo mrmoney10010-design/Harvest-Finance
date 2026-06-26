@@ -117,7 +117,7 @@ export class AuthController {
    */
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiOperation({ summary: 'Refresh access token', description: 'Generates a new access token using the provided refresh token. Returns a new access and refresh token pair upon successful validation.' })
   @ApiBody({ type: RefreshTokenDto })
   @ApiResponse({
     status: 200,
@@ -130,8 +130,15 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description:
-      'Validation error — refresh_token field is missing or malformed',
+    description: 'Validation error - refresh_token field is missing or malformed',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests - rate limit exceeded',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
   })
   async refresh(
     @Body() refreshTokenDto: RefreshTokenDto,
