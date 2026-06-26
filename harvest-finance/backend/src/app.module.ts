@@ -24,7 +24,7 @@ import { HealthModule } from './health/health.module';
 import { OrdersModule } from './orders/orders.module';
 import { VerificationModule } from './verification/verification.module';
 import { DatabaseModule } from './database/database.module';
-import { LoggerMiddleware } from './logger/logger.middleware';
+import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware';
 import { LoggerModule } from './logger/logger.module';
 import { MultiChainModule } from './multi-chain/multi-chain.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
@@ -200,7 +200,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(RequestValidationMiddleware, LoggerMiddleware)
+      .apply(RequestValidationMiddleware, HttpLoggerMiddleware)
       .forRoutes('*');
   }
 }
