@@ -12,6 +12,7 @@ import { Deposit } from '../database/entities/deposit.entity';
 import { DepositEvent } from '../database/entities/deposit-event.entity';
 import { Withdrawal } from '../database/entities/withdrawal.entity';
 import { VaultReservation } from './entities/vault-reservation.entity';
+import { VaultApyHistory } from '../database/entities/vault-apy-history.entity';
 import { DepositEventService } from './deposit-event.service';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -21,7 +22,7 @@ import { WithdrawalConfirmedHandler } from './events/withdrawal-confirmed.handle
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Vault, Deposit, DepositEvent, Withdrawal, VaultReservation]),
+    TypeOrmModule.forFeature([Vault, Deposit, DepositEvent, Withdrawal, VaultReservation, VaultApyHistory]),
     AuthModule,
     NotificationsModule,
     RealtimeModule,
