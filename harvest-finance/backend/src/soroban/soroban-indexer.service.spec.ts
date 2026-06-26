@@ -14,15 +14,37 @@ describe('SorobanIndexerService - Error Handling', () => {
   let service: SorobanIndexerService;
   let mockEventRepository: any;
   let mockIndexerStateRepository: any;
-  let mockDataSource: any;
   let mockCacheManager: any;
   let mockAxios: any;
+
+  /** Shared queryRunner used by runOnce() via manager.connection.createQueryRunner */
+  function makeDefaultQueryRunner() {
+    return {
+      connect: jest.fn().mockResolvedValue(undefined),
+      startTransaction: jest.fn().mockResolvedValue(undefined),
+      commitTransaction: jest.fn().mockResolvedValue(undefined),
+      rollbackTransaction: jest.fn().mockResolvedValue(undefined),
+      release: jest.fn().mockResolvedValue(undefined),
+      manager: {
+        save: jest.fn().mockResolvedValue(undefined),
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockReturnThis(),
+          into: jest.fn().mockReturnThis(),
+          values: jest.fn().mockReturnThis(),
+          orIgnore: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ identifiers: [{ id: 'uuid-1' }] }),
+        }),
+      },
+    };
+  }
 
   beforeEach(async () => {
     mockCacheManager = {
       get: jest.fn().mockResolvedValue(null),
       set: jest.fn().mockResolvedValue(undefined),
     };
+
+    const defaultQueryRunner = makeDefaultQueryRunner();
 
     mockEventRepository = {
       createQueryBuilder: jest.fn().mockReturnValue({
@@ -31,6 +53,15 @@ describe('SorobanIndexerService - Error Handling', () => {
       }),
       findAndCount: jest.fn().mockResolvedValue([[], 0]),
       count: jest.fn().mockResolvedValue(0),
+      manager: {
+        connection: {
+          createQueryRunner: jest.fn().mockReturnValue(defaultQueryRunner),
+        },
+      },
+    };
+
+    mockIndexerStateRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
     };
 
     mockIndexerStateRepository = {
@@ -84,10 +115,6 @@ describe('SorobanIndexerService - Error Handling', () => {
         {
           provide: getRepositoryToken(IndexerState),
           useValue: mockIndexerStateRepository,
-        },
-        {
-          provide: DataSource,
-          useValue: mockDataSource,
         },
         {
           provide: CACHE_MANAGER,
@@ -234,7 +261,19 @@ describe('SorobanIndexerService - Error Handling', () => {
       };
 
       mockAxios.post.mockResolvedValue(validResponse);
-      mockDataSource.transaction.mockRejectedValueOnce(new Error('Database error'));
+
+      // Inject a DB error via the queryRunner that runOnce() uses internally.
+      const failingQueryRunner = makeDefaultQueryRunner();
+      failingQueryRunner.manager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        orIgnore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockRejectedValue(new Error('Database error')),
+      });
+      mockEventRepository.manager.connection.createQueryRunner.mockReturnValue(
+        failingQueryRunner,
+      );
 
       await expect(service.runOnce()).rejects.toThrow('Database error');
     });

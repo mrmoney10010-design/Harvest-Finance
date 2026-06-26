@@ -5,15 +5,21 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, FindOptionsWhere, LessThan } from 'typeorm';
+import { Repository, DataSource, FindOptionsWhere, LessThan, MoreThan } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Vault, VaultStatus } from '../database/entities/vault.entity';
 import { Deposit, DepositStatus } from '../database/entities/deposit.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { VaultApyHistory } from '../database/entities/vault-apy-history.entity';
 import { DepositEventType } from '../database/entities/deposit-event.entity';
 import { ExternalPaymentEventType } from './dto/external-payment-notification.dto';
 import {
   Withdrawal,
   WithdrawalStatus,
 } from '../database/entities/withdrawal.entity';
+import { VaultReservation } from './entities/vault-reservation.entity';
+import { CreateReservationDto } from './dto/create-reservation.dto';
+import { ReservationResponseDto } from './dto/reservation-response.dto';
 import { DepositDto } from './dto/deposit.dto';
 import { BatchDepositDto } from './dto/batch-deposit.dto';
 import {
@@ -55,6 +61,10 @@ export class VaultsService {
     private depositRepository: Repository<Deposit>,
     @InjectRepository(Withdrawal)
     private withdrawalRepository: Repository<Withdrawal>,
+    @InjectRepository(VaultReservation)
+    private reservationRepository: Repository<VaultReservation>,
+    @InjectRepository(VaultApyHistory)
+    private vaultApyHistoryRepository: Repository<VaultApyHistory>,
     private dataSource: DataSource,
     private notificationsService: NotificationsService,
     private logger: CustomLoggerService,
@@ -131,12 +141,35 @@ export class VaultsService {
       throw new BadRequestException('Vault has reached maximum capacity');
     }
 
-    // Verify if the requested deposit amount is within the available capacity of the vault.
-    // The available capacity is derived from the formula: availableCapacity = maxCapacity - totalDeposits.
-    if (amount > vault.availableCapacity) {
-      throw new BadRequestException(
-        `Deposit amount exceeds available vault capacity. Available: ${vault.availableCapacity}`,
-      );
+    // Check if the depositor has an active reservation for this vault.
+    const depositorAddress = await this.getDepositorWalletAddress(userId);
+    const reservation = depositorAddress
+      ? await this.reservationRepository.findOne({
+          where: {
+            vaultId,
+            walletAddress: depositorAddress,
+            isActive: true,
+            expiresAt: MoreThan(new Date()),
+          },
+        })
+      : null;
+
+    if (reservation) {
+      // Reserved depositor: enforce amount <= reservedAmount
+      if (amount > Number(reservation.reservedAmount)) {
+        throw new BadRequestException(
+          `Deposit amount exceeds your reserved allocation. Reserved: ${reservation.reservedAmount}`,
+        );
+      }
+    } else {
+      // Public depositor: available capacity excludes all active reservations
+      const totalReserved = await this.getTotalActiveReservedAmount(vaultId);
+      const publicCapacity = vault.availableCapacity - totalReserved;
+      if (amount > publicCapacity) {
+        throw new BadRequestException(
+          `Deposit amount exceeds available public vault capacity. Available: ${publicCapacity}`,
+        );
+      }
     }
 
     const deposit = this.depositRepository.create({
@@ -772,6 +805,7 @@ export class VaultsService {
       totalDeposits: 0,
       maxCapacity: sourceVault.maxCapacity,
       interestRate: sourceVault.interestRate,
+      compoundingFrequency: sourceVault.compoundingFrequency || 'daily',
       maturityDate: sourceVault.maturityDate,
       lockPeriodEnd: sourceVault.lockPeriodEnd,
       isPublic: sourceVault.isPublic,
@@ -831,7 +865,23 @@ export class VaultsService {
     }));
   }
 
+  calculateApy(apr: number, frequency: 'daily' | 'weekly' | 'monthly'): number {
+    let n = 365;
+    if (frequency === 'weekly') {
+      n = 52;
+    } else if (frequency === 'monthly') {
+      n = 12;
+    }
+    const aprDecimal = apr / 100;
+    const apyDecimal = Math.pow(1 + aprDecimal / n, n) - 1;
+    return Math.round(apyDecimal * 100 * 100) / 100;
+  }
+
   mapVaultToResponse(vault: Vault): VaultResponseDto {
+    const apr = Number(vault.interestRate);
+    const compoundingFrequency = vault.compoundingFrequency || 'daily';
+    const apy = this.calculateApy(apr, compoundingFrequency);
+
     return {
       id: vault.id,
       ownerId: vault.ownerId,
@@ -845,7 +895,10 @@ export class VaultsService {
       maxCapacity: Number(vault.maxCapacity),
       availableCapacity: vault.availableCapacity,
       utilizationPercentage: vault.utilizationPercentage,
-      interestRate: Number(vault.interestRate),
+      interestRate: apr,
+      apr,
+      apy,
+      compoundingFrequency,
       maturityDate: vault.maturityDate,
       lockPeriodEnd: vault.lockPeriodEnd,
       isPublic: vault.isPublic,
@@ -929,11 +982,41 @@ export class VaultsService {
     };
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async recordDailyApySnapshots(): Promise<void> {
+    this.logger.log('Recording daily APY snapshots...', 'VaultsService');
+    const vaults = await this.vaultRepository.find({
+      where: { status: VaultStatus.ACTIVE },
+    });
+
+    for (const vault of vaults) {
+      const apr = Number(vault.interestRate);
+      const apy = this.calculateApy(apr, vault.compoundingFrequency || 'daily');
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Check if snapshot already exists for today to avoid duplicates
+      const exists = await this.vaultApyHistoryRepository.findOne({
+        where: { vaultId: vault.id, date: today },
+      });
+
+      if (!exists) {
+        const historyRecord = this.vaultApyHistoryRepository.create({
+          vaultId: vault.id,
+          date: today,
+          apy,
+        });
+        await this.vaultApyHistoryRepository.save(historyRecord);
+      }
+    }
+    this.logger.log('Finished recording daily APY snapshots.', 'VaultsService');
+  }
+
   async getApyHistory(
     vaultId?: string,
     timeRange: string = '30d',
   ): Promise<any[]> {
-    // Calculate date range
     const now = new Date();
     let daysBack = 30;
 
@@ -945,7 +1028,7 @@ export class VaultsService {
         daysBack = 90;
         break;
       case 'all':
-        daysBack = 365; // Approximate 1 year
+        daysBack = 365;
         break;
       default:
         daysBack = 30;
@@ -953,12 +1036,30 @@ export class VaultsService {
 
     const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
 
-    // For now, generate mock APY data
-    // In production, this would come from yield analytics data stored in database
+    const queryBuilder = this.vaultApyHistoryRepository
+      .createQueryBuilder('history')
+      .where('history.date >= :startDate', { startDate: startDate.toISOString().split('T')[0] });
+
+    if (vaultId) {
+      queryBuilder.andWhere('history.vaultId = :vaultId', { vaultId });
+    }
+
+    const records = await queryBuilder
+      .orderBy('history.date', 'ASC')
+      .getMany();
+
+    if (records.length > 0) {
+      return records.map(r => ({
+        date: typeof r.date === 'string' ? r.date : new Date(r.date).toISOString().split('T')[0],
+        apy: Number(r.apy),
+        vaultId: r.vaultId,
+      }));
+    }
+
+    // Fallback: If no real data exists, generate some mock data so charts aren't blank
     const dataPoints: { date: string; apy: number; vaultId: string }[] = [];
     for (let i = 0; i < daysBack; i++) {
       const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
-      // Generate somewhat realistic APY data with some variation
       const baseApy = 8 + Math.sin(i / 10) * 2 + Math.random() * 1;
       const apy = Math.max(0, Math.min(15, baseApy));
 
@@ -1143,6 +1244,132 @@ export class VaultsService {
 
     const updatedVault = await this.getVaultById(vaultId);
     return this.mapVaultToResponse(updatedVault);
+  }
+
+  async createReservation(
+    vaultId: string,
+    ownerId: string,
+    dto: CreateReservationDto,
+  ): Promise<ReservationResponseDto> {
+    const vault = await this.getVaultById(vaultId);
+
+    if (vault.ownerId !== ownerId && !(await this.isCurrentUserAdmin(ownerId))) {
+      throw new UnauthorizedException('Only the vault owner can create reservations');
+    }
+
+    if (vault.status !== VaultStatus.ACTIVE) {
+      throw new BadRequestException('Cannot create reservation for an inactive vault');
+    }
+
+    const expiresAt = new Date(dto.expiresAt);
+    if (expiresAt <= new Date()) {
+      throw new BadRequestException('Reservation expiry must be in the future');
+    }
+
+    const totalReserved = await this.getTotalActiveReservedAmount(vaultId);
+    if (dto.reservedAmount > vault.availableCapacity - totalReserved) {
+      throw new BadRequestException(
+        `Reservation amount exceeds available public capacity. Available: ${vault.availableCapacity - totalReserved}`,
+      );
+    }
+
+    const reservation = this.reservationRepository.create({
+      vaultId,
+      walletAddress: dto.walletAddress,
+      reservedAmount: dto.reservedAmount,
+      expiresAt,
+      isActive: true,
+    });
+
+    const saved = await this.reservationRepository.save(reservation);
+    return this.mapReservationToResponse(saved);
+  }
+
+  async getVaultReservations(
+    vaultId: string,
+    ownerId: string,
+  ): Promise<ReservationResponseDto[]> {
+    const vault = await this.getVaultById(vaultId);
+
+    if (vault.ownerId !== ownerId && !(await this.isCurrentUserAdmin(ownerId))) {
+      throw new UnauthorizedException('Only the vault owner can view reservations');
+    }
+
+    const reservations = await this.reservationRepository.find({
+      where: { vaultId, isActive: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    return reservations.map((r) => this.mapReservationToResponse(r));
+  }
+
+  async cancelReservation(
+    vaultId: string,
+    reservationId: string,
+    ownerId: string,
+  ): Promise<void> {
+    const vault = await this.getVaultById(vaultId);
+
+    if (vault.ownerId !== ownerId && !(await this.isCurrentUserAdmin(ownerId))) {
+      throw new UnauthorizedException('Only the vault owner can cancel reservations');
+    }
+
+    const reservation = await this.reservationRepository.findOne({
+      where: { id: reservationId, vaultId },
+    });
+
+    if (!reservation) {
+      throw new NotFoundException('Reservation not found');
+    }
+
+    await this.reservationRepository.update(reservationId, { isActive: false });
+  }
+
+  private async getTotalActiveReservedAmount(vaultId: string): Promise<number> {
+    const result = await this.reservationRepository
+      .createQueryBuilder('r')
+      .select('SUM(r.reservedAmount)', 'total')
+      .where('r.vaultId = :vaultId', { vaultId })
+      .andWhere('r.isActive = true')
+      .andWhere('r.expiresAt > :now', { now: new Date() })
+      .getRawOne();
+
+    return result?.total ? parseFloat(result.total) : 0;
+  }
+
+  private async getDepositorWalletAddress(userId: string): Promise<string | null> {
+    const user = await this.dataSource.getRepository(User).findOne({
+      where: { id: userId },
+      select: ['stellarAddress'],
+    });
+    return user?.stellarAddress ?? null;
+  }
+
+  private mapReservationToResponse(reservation: VaultReservation): ReservationResponseDto {
+    return {
+      id: reservation.id,
+      vaultId: reservation.vaultId,
+      walletAddress: reservation.walletAddress,
+      reservedAmount: Number(reservation.reservedAmount),
+      expiresAt: reservation.expiresAt,
+      isActive: reservation.isActive,
+      createdAt: reservation.createdAt,
+    };
+  }
+
+  @Cron('0 */5 * * * *')
+  async expireReservations(): Promise<void> {
+    const result = await this.reservationRepository.update(
+      { isActive: true, expiresAt: LessThan(new Date()) },
+      { isActive: false },
+    );
+
+    if (result.affected && result.affected > 0) {
+      this.logger.log(
+        `Expired ${result.affected} vault reservation(s)`,
+        'VaultsService',
+      );
+    }
   }
 
   private async isCurrentUserAdmin(userId: string): Promise<boolean> {

@@ -17,6 +17,7 @@ export {
 export { Notification, NotificationType } from './notification.entity';
 export { Order, OrderStatus } from './order.entity';
 export { Reward, RewardStatus } from './reward.entity';
+export { IndexerState } from './indexer-state.entity';
 export { SorobanEvent, SorobanEventType } from './soroban-event.entity';
 export {
   Transaction,
@@ -30,3 +31,5 @@ export { VaultDeposit } from './vault-deposit.entity';
 export { Verification, VerificationStatus } from './verification.entity';
 export { Withdrawal, WithdrawalStatus } from './withdrawal.entity';
 export { YieldAnalytics } from './yield-analytics.entity';
+export { VaultApyHistory } from './vault-apy-history.entity';
+

@@ -45,6 +45,7 @@ export class SorobanIndexerService implements OnModuleInit {
   private readonly http: AxiosInstance;
 
   private lastIndexedLedger: number | null = null;
+  private lastCursor: string | null = null;
   private lastPolledAt: Date | null = null;
   private running = false;
   private persistedCursors: Map<string, string> = new Map();
@@ -93,6 +94,12 @@ export class SorobanIndexerService implements OnModuleInit {
     });
   }
 
+  private get stateKey(): string {
+    return this.filterContractIds.length > 0
+      ? this.filterContractIds.join(',')
+      : '*';
+  }
+
   async onModuleInit(): Promise<void> {
     try {
       // Load persisted cursors from indexer_state
@@ -114,8 +121,23 @@ export class SorobanIndexerService implements OnModuleInit {
       this.lastIndexedLedger = latest?.maxLedger
         ? parseInt(latest.maxLedger, 10)
         : null;
+
+      // Restore persisted cursor from the indexer_state table.
+      try {
+        const state = await this.indexerStateRepository.findOne({
+          where: { contractId: this.stateKey },
+        });
+        if (state) {
+          this.lastCursor = state.lastCursor;
+        }
+      } catch (cursorErr) {
+        this.logger.warn(
+          `Failed to restore indexer cursor (table may not yet exist): ${(cursorErr as Error).message}`,
+        );
+      }
+
       this.logger.log(
-        `Soroban indexer initialised | enabled=${this.enabled} rpc=${this.rpcUrl} lastLedger=${this.lastIndexedLedger ?? 'none'}`,
+        `Soroban indexer initialised | enabled=${this.enabled} rpc=${this.rpcUrl} lastLedger=${this.lastIndexedLedger ?? 'none'} cursor=${this.lastCursor ?? 'none'}`,
       );
     } catch (err) {
       this.logger.warn(
@@ -163,51 +185,63 @@ export class SorobanIndexerService implements OnModuleInit {
 
     const entities = response.events.map((ev) => this.toEntity(ev));
 
-    // Last event's pagingToken is the new cursor
-    const lastEvent = entities[entities.length - 1];
-    const newCursor = lastEvent.pagingToken;
-    const cursorKey =
-      this.filterContractIds.length === 1
-        ? this.filterContractIds[0]
-        : '__global__';
+    // Find the max pagingToken from the batch (lexicographic max is safe for
+    // Soroban paging tokens which are zero-padded numeric strings).
+    const maxPagingToken = entities.reduce(
+      (max, e) => (e.pagingToken > max ? e.pagingToken : max),
+      entities[0].pagingToken,
+    );
 
-    // Atomic transaction: save events + update cursor
-    const saved = await this.dataSource.transaction(async (manager) => {
-      // Upsert events (idempotent by event_id)
-      const result = await manager
+    // Persist events and update cursor atomically inside a single transaction.
+    const dataSource = this.eventRepository.manager.connection;
+    const queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    let saved = 0;
+    try {
+      // Insert events (idempotent — orIgnore on unique event_id).
+      const result = await queryRunner.manager
         .createQueryBuilder()
         .insert()
         .into(SorobanEvent)
         .values(entities as any)
         .orIgnore()
         .execute();
-      const savedCount = result.identifiers.filter(
-        (id) => id !== undefined,
-      ).length;
+      saved = result.identifiers.filter((id) => id !== undefined).length;
 
-      // Upsert cursor state atomically with event writes
-      await manager.upsert(
-        IndexerState,
-        { contractId: cursorKey, lastCursor: newCursor, updatedAt: new Date() },
-        ['contractId'],
+      // Upsert the cursor position.
+      await queryRunner.manager.save(IndexerState, {
+        contractId: this.stateKey,
+        lastCursor: maxPagingToken,
+      } as IndexerState);
+
+      await queryRunner.commitTransaction();
+
+      // Update in-memory state only after successful commit.
+      this.lastCursor = maxPagingToken;
+      const maxLedgerInBatch = entities.reduce(
+        (max, e) => (e.ledger > max ? e.ledger : max),
+        this.lastIndexedLedger ?? 0,
       );
-
-      return savedCount;
-    });
-
-    // Update in-memory cursor map after successful transaction
-    this.persistedCursors.set(cursorKey, newCursor);
-
-    const maxLedgerInBatch = entities.reduce(
-      (max, e) => (e.ledger > max ? e.ledger : max),
-      this.lastIndexedLedger ?? 0,
-    );
-    this.lastIndexedLedger = maxLedgerInBatch;
+      this.lastIndexedLedger = maxLedgerInBatch;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
 
     return { saved, latestLedger: response.latestLedger };
   }
 
   private async resolveStartLedger(): Promise<number> {
+    // When we have a persisted cursor, cursor-based pagination is used in
+    // fetchEvents instead of startLedger, so any positive integer is fine here.
+    if (this.lastCursor) {
+      return 1;
+    }
+
     if (this.lastIndexedLedger && this.lastIndexedLedger > 0) {
       return this.lastIndexedLedger + 1;
     }
@@ -236,27 +270,21 @@ export class SorobanIndexerService implements OnModuleInit {
       filters.contractIds = this.filterContractIds;
     }
 
-    // Determine cursor key for this run
-    const cursorKey =
-      this.filterContractIds.length === 1
-        ? this.filterContractIds[0]
-        : '__global__';
-    const cursor = this.persistedCursors.get(cursorKey);
+    // When a persisted cursor exists use it for pagination; otherwise fall back
+    // to startLedger so the RPC knows where to begin.
+    const pagination: Record<string, unknown> = this.lastCursor
+      ? { cursor: this.lastCursor, limit: this.pageSize }
+      : { limit: this.pageSize };
 
-    if (cursor) {
-      // Resume from cursor (cursor-based pagination — startLedger is mutually exclusive)
-      return this.rpcCall<RpcGetEventsResponse>('getEvents', {
-        filters: [filters],
-        pagination: { cursor, limit: this.pageSize },
-      });
+    const params: Record<string, unknown> = {
+      filters: [filters],
+      pagination,
+    };
+    if (!this.lastCursor) {
+      params.startLedger = startLedger;
     }
 
-    // No cursor yet: use ledger-based start (existing behavior)
-    return this.rpcCall<RpcGetEventsResponse>('getEvents', {
-      startLedger,
-      filters: [filters],
-      pagination: { limit: this.pageSize },
-    });
+    return this.rpcCall<RpcGetEventsResponse>('getEvents', params);
   }
 
   private async rpcCall<T>(method: string, params: unknown): Promise<T> {

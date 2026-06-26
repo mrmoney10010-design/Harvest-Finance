@@ -1,7 +1,8 @@
 import { CacheModule } from '@nestjs/cache-manager';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ClassSerializerInterceptor } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -9,7 +10,6 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { validateEnvironment } from './common/config/env.validation';
 import { buildThrottlerOptions } from './common/config/throttler.config';
 import { CommonModule } from './common/common.module';
 import { RequestValidationMiddleware } from './common/middleware/request-validation.middleware';
@@ -24,7 +24,7 @@ import { HealthModule } from './health/health.module';
 import { OrdersModule } from './orders/orders.module';
 import { VerificationModule } from './verification/verification.module';
 import { DatabaseModule } from './database/database.module';
-import { LoggerMiddleware } from './logger/logger.middleware';
+import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware';
 import { LoggerModule } from './logger/logger.module';
 import { MultiChainModule } from './multi-chain/multi-chain.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
@@ -60,6 +60,7 @@ import {
   Verification,
   Withdrawal,
   YieldAnalytics,
+  VaultApyHistory,
 } from './database/entities';
 import { IndexerState } from './database/entities/indexer-state.entity';
 import { CommunityPost } from './database/entities/community-post.entity';
@@ -85,16 +86,16 @@ import { CreateSorobanEvents1700000000011 } from './database/migrations/17000000
 import { CreateYieldAnalytics1700000000012 } from './database/migrations/1700000000012-CreateYieldAnalytics';
 import { AddSorobanEventQueryIndexes1700000000013 } from './database/migrations/1700000000013-AddSorobanEventQueryIndexes';
 import { CreateDepositEvents1700000000016 } from './database/migrations/1700000000016-CreateDepositEvents';
-import { AddSuspendedVaultStatusAndStellarAccount1700000000018 } from './database/migrations/1700000000018-AddSuspendedVaultStatusAndStellarAccount';
-import { CreateIndexerState1700000000019 } from './database/migrations/1700000000019-CreateIndexerState';
-import { AddUserLoginLockout1700000000020 } from './database/migrations/1700000000020-AddUserLoginLockout';
+import { CreateVaultReservations1700000000018 } from './database/migrations/1700000000018-CreateVaultReservations';
+import { VaultReservation } from './vaults/entities/vault-reservation.entity';
+import { CreateVaultApyHistory1700000000017 } from './database/migrations/1700000000017-CreateVaultApyHistory';
 import { DomainEventsModule } from './domain-events';
 import { DomainEventHandlersModule } from './common/events';
 import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
+    ConfigModule.forRoot({ isGlobal: true }),
     DomainEventsModule,
     ObservabilityModule,
     AppConfigModule,
@@ -134,6 +135,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
           SorobanEvent,
           IndexerState,
           YieldAnalytics,
+          VaultReservation,
+          VaultApyHistory,
         ],
         migrations: [
           CreateInitialSchema1700000000000,
@@ -148,9 +151,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
           CreateYieldAnalytics1700000000012,
           AddSorobanEventQueryIndexes1700000000013,
           CreateDepositEvents1700000000016,
-          AddSuspendedVaultStatusAndStellarAccount1700000000018,
-          CreateIndexerState1700000000019,
-          AddUserLoginLockout1700000000020,
+          CreateVaultReservations1700000000018,
+          CreateVaultApyHistory1700000000017,
         ],
         synchronize: false,
         migrationsRun: false,
@@ -199,12 +201,16 @@ import { WebhooksModule } from './webhooks/webhooks.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
+    },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(RequestValidationMiddleware, LoggerMiddleware)
+      .apply(RequestValidationMiddleware, HttpLoggerMiddleware)
       .forRoutes('*');
   }
 }

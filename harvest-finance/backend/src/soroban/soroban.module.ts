@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
+import { IndexerState } from '../database/entities/indexer-state.entity';
 import { SorobanEvent } from '../database/entities/soroban-event.entity';
 import { IndexerState } from '../database/entities/indexer-state.entity';
 import { AuthModule } from '../auth/auth.module';
