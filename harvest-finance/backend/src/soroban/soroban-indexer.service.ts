@@ -4,7 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import { Between, FindOptionsWhere, Repository } from 'typeorm';
+import { Between, DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import axios, { AxiosInstance } from 'axios';
 import {
   SorobanEvent,
@@ -48,6 +48,7 @@ export class SorobanIndexerService implements OnModuleInit {
   private lastCursor: string | null = null;
   private lastPolledAt: Date | null = null;
   private running = false;
+  private persistedCursors: Map<string, string> = new Map();
 
   constructor(
     @InjectRepository(SorobanEvent)
@@ -56,6 +57,7 @@ export class SorobanIndexerService implements OnModuleInit {
     private readonly indexerStateRepository: Repository<IndexerState>,
     private readonly config: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly dataSource: DataSource,
   ) {
     this.enabled =
       this.config.get<string>('SOROBAN_INDEXER_ENABLED', 'false') === 'true';
@@ -100,6 +102,18 @@ export class SorobanIndexerService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
+      // Load persisted cursors from indexer_state
+      const states = await this.indexerStateRepository.find();
+      if (states.length > 0) {
+        this.persistedCursors = new Map(
+          states.map((s) => [s.contractId, s.lastCursor]),
+        );
+        this.logger.log(
+          `Soroban indexer resumed from ${states.length} persisted cursor(s)`,
+        );
+      }
+
+      // Also load lastIndexedLedger for fallback ledger-based startup
       const latest = await this.eventRepository
         .createQueryBuilder('e')
         .select('MAX(e.ledger)', 'maxLedger')
@@ -127,7 +141,7 @@ export class SorobanIndexerService implements OnModuleInit {
       );
     } catch (err) {
       this.logger.warn(
-        `Failed to resolve last indexed ledger (table may not yet exist): ${(err as Error).message}`,
+        `Failed to load indexer state: ${(err as Error).message}`,
       );
     }
   }

@@ -102,6 +102,9 @@ export class User {
   @Column({ name: 'reset_password_expires', nullable: true })
   resetPasswordExpires: Date | null;
 
+  @Column({ name: 'locked_until', nullable: true, default: null })
+  lockedUntil: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

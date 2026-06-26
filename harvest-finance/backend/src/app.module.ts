@@ -62,6 +62,7 @@ import {
   YieldAnalytics,
   VaultApyHistory,
 } from './database/entities';
+import { IndexerState } from './database/entities/indexer-state.entity';
 import { CommunityPost } from './database/entities/community-post.entity';
 import { CommunityComment } from './database/entities/community-comment.entity';
 import { PostReaction } from './database/entities/post-reaction.entity';
@@ -132,6 +133,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
           InsurancePlan,
           InsuranceSubscription,
           SorobanEvent,
+          IndexerState,
           YieldAnalytics,
           VaultReservation,
           VaultApyHistory,

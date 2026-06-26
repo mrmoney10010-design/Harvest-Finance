@@ -40,6 +40,22 @@ export class AuthService {
   private readonly refreshTokenExpiry = '7d';
   private readonly resetTokenExpiry = 3600000; // 1 hour in milliseconds
 
+  private get maxLoginAttempts(): number {
+    return this.configService.get<number>('MAX_LOGIN_ATTEMPTS', 5);
+  }
+
+  private get lockoutWindowMs(): number {
+    return this.configService.get<number>('LOCKOUT_WINDOW_MINUTES', 15) * 60 * 1000;
+  }
+
+  private get lockoutDurationMs(): number {
+    return this.configService.get<number>('LOCKOUT_DURATION_MINUTES', 30) * 60 * 1000;
+  }
+
+  private lockoutAttemptsKey(userId: string): string {
+    return `lockout:attempts:${userId}`;
+  }
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -125,6 +141,7 @@ export class AuthService {
         'phone',
         'stellarAddress',
         'isActive',
+        'lockedUntil',
       ],
     });
 
@@ -144,6 +161,19 @@ export class AuthService {
       throw new UnauthorizedException('Account is deactivated');
     }
 
+    // Check account lockout
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const remainingMs = user.lockedUntil.getTime() - Date.now();
+      const remainingMin = Math.ceil(remainingMs / 60000);
+      this.logger.warn(
+        `Login attempt for locked account: ${email} (locked for ${remainingMin} more minute(s))`,
+        'AuthService',
+      );
+      throw new UnauthorizedException(
+        `Account is locked due to too many failed login attempts. Try again in ${remainingMin} minute(s).`,
+      );
+    }
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
@@ -152,11 +182,15 @@ export class AuthService {
         `Failed login attempt for email (invalid password): ${email}`,
         'AuthService',
       );
+      await this.recordFailedAttempt(user);
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Successful login — reset failure counter and clear any expired lock
+    await this.resetLoginAttempts(user.id);
+
     // Update last login
-    await this.userRepository.update(user.id, { lastLogin: new Date() });
+    await this.userRepository.update(user.id, { lastLogin: new Date(), lockedUntil: null });
 
     // Generate tokens
     const tokens = await this.generateTokens(user);
@@ -168,6 +202,43 @@ export class AuthService {
       refresh_token: tokens.refreshToken,
       user: this.mapUserToResponse(user),
     };
+  }
+
+  private async recordFailedAttempt(user: User): Promise<void> {
+    const key = this.lockoutAttemptsKey(user.id);
+    const windowSec = Math.ceil(this.lockoutWindowMs / 1000);
+
+    const current = await this.cacheManager.get<number>(key) ?? 0;
+    const next = current + 1;
+
+    await this.cacheManager.set(key, next, windowSec);
+
+    if (next >= this.maxLoginAttempts) {
+      const lockedUntil = new Date(Date.now() + this.lockoutDurationMs);
+      await this.userRepository.update(user.id, { lockedUntil });
+      await this.cacheManager.del(key);
+
+      this.logger.warn(
+        JSON.stringify({
+          event: 'account_locked',
+          userId: user.id,
+          email: user.email,
+          lockedUntil: lockedUntil.toISOString(),
+          reason: `${this.maxLoginAttempts} consecutive failed login attempts`,
+        }),
+        'AuthService',
+      );
+
+      // In-app notification (email would be sent here if mail service were configured)
+      this.logger.error(
+        `NOTIFY user ${user.email}: account locked until ${lockedUntil.toISOString()}`,
+        'AuthService',
+      );
+    }
+  }
+
+  private async resetLoginAttempts(userId: string): Promise<void> {
+    await this.cacheManager.del(this.lockoutAttemptsKey(userId));
   }
 
   /**

@@ -32,6 +32,14 @@ import {
 } from '../interfaces/stellar.interfaces';
 import { StellarClientService } from './stellar-client.service';
 
+export class FeeCapExceededException extends ServiceUnavailableException {
+  constructor(withBuffer: number, maxFee: number) {
+    super(
+      `Fee cap exceeded: estimated ${withBuffer} stroops > cap ${maxFee} stroops. Operation queued for retry when fee cap is exceeded.`,
+    );
+  }
+}
+
 @Injectable()
 export class StellarService implements OnModuleInit {
   private readonly logger = new Logger(StellarService.name);
@@ -1087,8 +1095,30 @@ export class StellarService implements OnModuleInit {
   private async getBaseFee(): Promise<string> {
     try {
       const stats = await this.getHorizonFeeStats('getBaseFee');
-      return stats.fee_charged.mode;
-    } catch {
+      const feeCharged = stats.fee_charged as Record<string, string>;
+      const p90 = parseInt(feeCharged.p90, 10);
+      const withBuffer = p90 + Math.ceil(p90 * 0.1);
+      const maxFee = this.getPositiveIntegerConfig(
+        'STELLAR_MAX_FEE_STROOPS',
+        10_000,
+      );
+      const cappedByMax = withBuffer > maxFee;
+      const selected = cappedByMax ? maxFee : withBuffer;
+
+      if (cappedByMax) {
+        throw new FeeCapExceededException(withBuffer, maxFee);
+      }
+
+      this.logger.log(
+        `Fee selected | p90=${p90} stroops | buffered=${withBuffer} | cap=${maxFee} | selected=${selected} | capped=${cappedByMax}`,
+      );
+
+      return String(selected);
+    } catch (err) {
+      if (err instanceof FeeCapExceededException) {
+        throw err;
+      }
+      this.logger.warn('Could not fetch fee stats, using default 100 stroops');
       return '100';
     }
   }
