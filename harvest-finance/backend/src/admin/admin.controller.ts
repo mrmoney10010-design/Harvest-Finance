@@ -131,4 +131,32 @@ export class AdminController {
   async getUserActivity(): Promise<any[]> {
     return this.adminService.getUserActivity();
   }
+
+  @Post('platform/circuit-breaker/open')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Activate platform circuit breaker to halt all deposits and withdrawals',
+  })
+  @ApiResponse({ status: 200, description: 'Circuit breaker activated' })
+  async openCircuitBreaker(
+    @Request() req: any,
+    @Body() body?: { reason?: string },
+  ): Promise<{ active: boolean }> {
+    return this.adminService.openCircuitBreaker(req.user.id, body?.reason);
+  }
+
+  @Post('platform/circuit-breaker/close')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Deactivate platform circuit breaker to resume all deposits and withdrawals',
+  })
+  @ApiResponse({ status: 200, description: 'Circuit breaker deactivated' })
+  async closeCircuitBreaker(
+    @Request() req: any,
+    @Body() body?: { reason?: string },
+  ): Promise<{ active: boolean }> {
+    return this.adminService.closeCircuitBreaker(req.user.id, body?.reason);
+  }
 }
