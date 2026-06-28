@@ -21,6 +21,7 @@ import { CommonModule } from '../common/common.module';
 import { WithdrawalConfirmedHandler } from './events/withdrawal-confirmed.handler';
 import { StellarModule } from '../stellar/stellar.module';
 import { VaultAccountMonitorService } from './vault-account-monitor.service';
+import { WithdrawalQueueService } from './withdrawal-queue.service';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { VaultAccountMonitorService } from './vault-account-monitor.service';
     StellarModule,
   ],
   controllers: [VaultsController],
-  providers: [VaultsService, DepositEventService, WithdrawalConfirmedHandler, VaultAccountMonitorService],
-  exports: [VaultsService, DepositEventService],
+  providers: [VaultsService, DepositEventService, WithdrawalConfirmedHandler, VaultAccountMonitorService, WithdrawalQueueService],
+  exports: [VaultsService, DepositEventService, WithdrawalQueueService],
 })
 export class VaultsModule {}
