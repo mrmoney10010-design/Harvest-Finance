@@ -403,4 +403,15 @@ export class AuthController {
   async githubAuthRedirect(@Req() req): Promise<AuthResponseDto> {
     return this.authService.loginWithOAuth(req.user);
   }
+
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
+  @Post('resend-verification')
+  @UseGuards(JwtAuthGuard)
+  async resendVerification(@Req() req) {
+    return this.authService.resendVerification(req.user.id);
+  }
 }

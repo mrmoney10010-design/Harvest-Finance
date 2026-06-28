@@ -82,6 +82,8 @@ export enum VaultStatus {
 @Index('idx_vaults_type', ['type'])
 @Index('idx_vaults_status', ['status'])
 export class Vault {
+  @Column({ name: 'strategy_score', type: 'float', default: 0, nullable: true })
+  strategyScore: number | null;
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
