@@ -1,21 +1,27 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Vault } from './vault.entity';
 import { User } from './user.entity';
 
 export enum InsuranceClaimStatus {
   PENDING = 'PENDING',
   COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
   REJECTED = 'REJECTED',
 }
 
-/**
- * Records a payout claim from the insurance fund to a depositor.
- * The claim is created during an incident workflow and later updated
- * when the payout is processed on‑chain.
- */
 @Entity('insurance_claims')
-@Index('idx_insurance_claim_vault', ['vaultId'])
-@Index('idx_insurance_claim_user', ['depositorId'])
+@Index('idx_insurance_claims_vault', ['vaultId'])
+@Index('idx_insurance_claims_depositor', ['depositorId'])
+@Index('idx_insurance_claims_status', ['status'])
 export class InsuranceClaim {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -23,29 +29,47 @@ export class InsuranceClaim {
   @Column({ name: 'vault_id' })
   vaultId: string;
 
-  @ManyToOne(() => Vault, (vault) => vault.id, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'vault_id' })
-  vault: Vault;
-
   @Column({ name: 'depositor_id' })
   depositorId: string;
 
-  @ManyToOne(() => User, (user) => user.id, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'depositor_id' })
-  depositor: User;
-
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @Column({
+    type: 'decimal',
+    precision: 18,
+    scale: 8,
+  })
   lossAmount: number;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @Column({
+    type: 'decimal',
+    precision: 18,
+    scale: 8,
+  })
   payoutAmount: number;
 
-  @Column({ type: 'enum', enum: InsuranceClaimStatus, default: InsuranceClaimStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: InsuranceClaimStatus,
+    default: InsuranceClaimStatus.PENDING,
+  })
   status: InsuranceClaimStatus;
+
+  @Column({ type: 'text', nullable: true, name: 'transaction_hash' })
+  transactionHash: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  reason: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @ManyToOne(() => Vault, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'vault_id' })
+  vault: Vault;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'depositor_id' })
+  depositor: User;
 }
