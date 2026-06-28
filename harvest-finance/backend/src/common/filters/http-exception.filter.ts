@@ -72,6 +72,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       errorCode = this.getErrorCodeFromStatus(status);
     }
 
+    // Determine error code: prefer existing errorCode on exception, fallback to status code
+    const errorCode =
+      (exception as any).errorCode ||
+      (exception instanceof HttpException ? status.toString() : '500');
+
     const errorResponse = {
       statusCode: status,
       message: message,
@@ -112,3 +117,5 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return statusMap[status] || 'UNKNOWN_ERROR';
   }
 }
+
+    
