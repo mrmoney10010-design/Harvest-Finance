@@ -14,10 +14,12 @@ import { UserOAuthLink } from '../database/entities/user-oauth-link.entity';
 import { Session } from '../database/entities/session.entity';
 import { SecurityEvent } from '../database/entities/security-event.entity';
 import { CommonModule } from '../common/common.module';
+import { CustodialWallet } from '../wallets/entities/custodial-wallet.entity';
+import { CustodialWalletService } from '../wallets/custodial-wallet.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserOAuthLink, Session, SecurityEvent]),
+    TypeOrmModule.forFeature([User, UserOAuthLink, CustodialWallet]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: 'super_secret_jwt_key',
@@ -27,8 +29,8 @@ import { CommonModule } from '../common/common.module';
     }),
     CommonModule,
   ],
-  controllers: [AuthController, SessionsController],
-  providers: [AuthService, JwtStrategy, StellarStrategy, GoogleStrategy, GithubStrategy],
-  exports: [AuthService, JwtStrategy, StellarStrategy, GoogleStrategy, GithubStrategy, PassportModule],
+  controllers: [AuthController],
+  providers: [AuthService, JwtStrategy, StellarStrategy, GoogleStrategy, GithubStrategy, CustodialWalletService],
+  exports: [AuthService, JwtStrategy, StellarStrategy, GoogleStrategy, GithubStrategy, PassportModule, CustodialWalletService],
 })
 export class AuthModule {}
