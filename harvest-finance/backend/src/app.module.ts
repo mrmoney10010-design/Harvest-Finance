@@ -90,7 +90,10 @@ import { CreateDepositEvents1700000000016 } from './database/migrations/17000000
 import { CreateVaultReservations1700000000018 } from './database/migrations/1700000000018-CreateVaultReservations';
 import { AddDepositorConcentrationThreshold1700000000022 } from './database/migrations/1700000000022-AddDepositorConcentrationThreshold';
 import { VaultReservation } from './vaults/entities/vault-reservation.entity';
+import { Session } from './database/entities/session.entity';
+import { SecurityEvent } from './database/entities/security-event.entity';
 import { CreateVaultApyHistory1700000000017 } from './database/migrations/1700000000017-CreateVaultApyHistory';
+import { AddRefreshTokenRotation1700000000022 } from './database/migrations/1700000000022-AddRefreshTokenRotation';
 import { DomainEventsModule } from './domain-events';
 import { DomainEventHandlersModule } from './common/events';
 import { WebhooksModule } from './webhooks/webhooks.module';
