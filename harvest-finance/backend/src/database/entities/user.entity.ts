@@ -98,6 +98,15 @@ export class User {
   @Column({ name: 'reset_password_expires', nullable: true })
   resetPasswordExpires: Date | null;
 
+  @Column({ name: 'telegram_chat_id', nullable: true })
+  telegramChatId: string | null;
+
+  @Column({ name: 'telegram_link_token', select: false, nullable: true })
+  telegramLinkToken: string | null;
+
+  @Column({ name: 'telegram_link_token_expires', nullable: true })
+  telegramLinkTokenExpires: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

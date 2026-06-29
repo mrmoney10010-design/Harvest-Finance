@@ -40,6 +40,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { AppConfigModule } from './config/config.module'; 
+import { TelegramModule } from './integrations/telegram/telegram.module';
 
 import {
   Achievement,
@@ -190,6 +191,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     StateSyncModule,
     WebhooksModule,
     DomainEventHandlersModule,
+    TelegramModule,
   ],
   controllers: [AppController],
   providers: [
