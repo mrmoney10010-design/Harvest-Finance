@@ -14,6 +14,9 @@ import {
   Withdrawal,
   WithdrawalStatus,
 } from '../database/entities/withdrawal.entity';
+import { VaultReservation } from './entities/vault-reservation.entity';
+import { User } from '../database/entities/user.entity';
+import { VaultApproval } from '../database/entities/vault-approval.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CustomLoggerService } from '../logger/custom-logger.service';
 import { VaultGateway } from '../realtime/vault.gateway';
@@ -53,21 +56,15 @@ describe('VaultsService', () => {
     deposits: [],
   };
 
-  const mockEntityManager = {
-    save: jest.fn(),
-    increment: jest.fn(),
-    decrement: jest.fn(),
-    update: jest.fn(),
+  const mockUserRepository = {
     findOne: jest.fn(),
-    find: jest.fn(),
-    getRepository: jest.fn(),
+    save: jest.fn(),
   };
 
-  const mockDataSource = {
-    transaction: jest.fn((cb: (em: typeof mockEntityManager) => unknown) =>
-      cb(mockEntityManager),
-    ),
-    getRepository: jest.fn(),
+  const mockVaultApprovalRepository = {
+    findOne: jest.fn(),
+    save: jest.fn(),
+    update: jest.fn(),
   };
 
   const mockVaultRepository = {
@@ -78,6 +75,70 @@ describe('VaultsService', () => {
     update: jest.fn(),
     count: jest.fn(),
   };
+
+  const mockDepositRepository = {
+    create: jest.fn(),
+    findOne: jest.fn(),
+    find: jest.fn(),
+    update: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
+
+  const mockWithdrawalRepository = {
+    create: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+  };
+
+  const mockReservationQB = {
+    select: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getRawOne: jest.fn().mockResolvedValue({ total: 0 }),
+  };
+
+  const mockVaultReservationRepository = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(mockReservationQB),
+  };
+
+  const mockEntityManager = {
+    save: jest.fn(),
+    increment: jest.fn(),
+    decrement: jest.fn(),
+    update: jest.fn(),
+    findOne: jest.fn(),
+    find: jest.fn(),
+    getRepository: jest.fn((entity) => {
+      if (entity === User) return mockUserRepository;
+      if (entity === VaultApproval) return mockVaultApprovalRepository;
+      if (entity === Vault) return mockVaultRepository;
+      if (entity === Deposit) return mockDepositRepository;
+      if (entity === Withdrawal) return mockWithdrawalRepository;
+      if (entity === VaultReservation) return mockVaultReservationRepository;
+      return null;
+    }),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn((cb: (em: typeof mockEntityManager) => unknown) =>
+      cb(mockEntityManager),
+    ),
+    getRepository: jest.fn((entity) => {
+      if (entity === User) return mockUserRepository;
+      if (entity === VaultApproval) return mockVaultApprovalRepository;
+      if (entity === Vault) return mockVaultRepository;
+      if (entity === Deposit) return mockDepositRepository;
+      if (entity === Withdrawal) return mockWithdrawalRepository;
+      if (entity === VaultReservation) return mockVaultReservationRepository;
+      return null;
+    }),
+  };
+
   const mockApyHistoryQB = {
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
@@ -90,18 +151,6 @@ describe('VaultsService', () => {
     create: jest.fn(),
     save: jest.fn(),
     createQueryBuilder: jest.fn().mockReturnValue(mockApyHistoryQB),
-  };
-  const mockDepositRepository = {
-    create: jest.fn(),
-    findOne: jest.fn(),
-    find: jest.fn(),
-    update: jest.fn(),
-    createQueryBuilder: jest.fn(),
-  };
-  const mockWithdrawalRepository = {
-    create: jest.fn(),
-    findOne: jest.fn(),
-    update: jest.fn(),
   };
   const mockNotificationsService = {
     create: jest.fn().mockResolvedValue(undefined),
@@ -140,16 +189,20 @@ describe('VaultsService', () => {
         VaultsService,
         { provide: getRepositoryToken(Vault), useValue: mockVaultRepository },
         {
-          provide: getRepositoryToken(VaultApyHistory),
-          useValue: mockVaultApyHistoryRepository,
-        },
-        {
           provide: getRepositoryToken(Deposit),
           useValue: mockDepositRepository,
         },
         {
           provide: getRepositoryToken(Withdrawal),
           useValue: mockWithdrawalRepository,
+        },
+        {
+          provide: getRepositoryToken(VaultReservation),
+          useValue: mockVaultReservationRepository,
+        },
+        {
+          provide: getRepositoryToken(VaultApyHistory),
+          useValue: mockVaultApyHistoryRepository,
         },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NotificationsService, useValue: mockNotificationsService },

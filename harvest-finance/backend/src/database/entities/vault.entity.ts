@@ -149,7 +149,7 @@ export class Vault {
   @Column({ name: 'current_approvals', type: 'int', default: 0 })
   currentApprovals: number;
 
-  @Column({ name: 'stellar_account_address', length: 56, nullable: true, default: null })
+  @Column({ name: 'stellar_account_address', type: 'varchar', length: 56, nullable: true, default: null })
   stellarAccountAddress: string | null;
 
   @CreateDateColumn({ name: 'created_at' })

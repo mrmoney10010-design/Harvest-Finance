@@ -23,6 +23,8 @@ import {
   WithdrawalStatus,
 } from '../database/entities/withdrawal.entity';
 import { VaultApyHistory } from '../database/entities/vault-apy-history.entity';
+import { VaultReservation } from './entities/vault-reservation.entity';
+import { VaultApproval } from '../database/entities/vault-approval.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CustomLoggerService } from '../logger/custom-logger.service';
 import { VaultGateway } from '../realtime/vault.gateway';
@@ -69,19 +71,15 @@ const buildVault = (
 describe('VaultsService — Yield Strategy Integration', () => {
   let service: VaultsService;
 
-  const mockManager = {
-    save: jest.fn(),
-    increment: jest.fn(),
-    decrement: jest.fn(),
-    update: jest.fn(),
+  const mockUserRepository = {
     findOne: jest.fn(),
+    save: jest.fn(),
   };
 
-  const mockDataSource = {
-    transaction: jest.fn((cb: (em: typeof mockManager) => unknown) =>
-      cb(mockManager),
-    ),
-    getRepository: jest.fn(),
+  const mockVaultApprovalRepository = {
+    findOne: jest.fn(),
+    save: jest.fn(),
+    update: jest.fn(),
   };
 
   const mockVaultRepository = {
@@ -90,6 +88,67 @@ describe('VaultsService — Yield Strategy Integration', () => {
     create: jest.fn(),
     save: jest.fn(),
     count: jest.fn(),
+  };
+
+  const mockDepositRepository = {
+    create: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
+
+  const mockWithdrawalRepository = {
+    create: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+  };
+
+  const mockReservationQB = {
+    select: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getRawOne: jest.fn().mockResolvedValue({ total: 0 }),
+  };
+
+  const mockVaultReservationRepository = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(mockReservationQB),
+  };
+
+  const mockManager = {
+    save: jest.fn(),
+    increment: jest.fn(),
+    decrement: jest.fn(),
+    update: jest.fn(),
+    findOne: jest.fn(),
+    getRepository: jest.fn((entity) => {
+      if (entity === User) return mockUserRepository;
+      if (entity === VaultApproval) return mockVaultApprovalRepository;
+      if (entity === Vault) return mockVaultRepository;
+      if (entity === Deposit) return mockDepositRepository;
+      if (entity === Withdrawal) return mockWithdrawalRepository;
+      if (entity === VaultReservation) return mockVaultReservationRepository;
+      return null;
+    }),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn((cb: (em: typeof mockManager) => unknown) =>
+      cb(mockManager),
+    ),
+    getRepository: jest.fn((entity) => {
+      if (entity === User) return mockUserRepository;
+      if (entity === VaultApproval) return mockVaultApprovalRepository;
+      if (entity === Vault) return mockVaultRepository;
+      if (entity === Deposit) return mockDepositRepository;
+      if (entity === Withdrawal) return mockWithdrawalRepository;
+      if (entity === VaultReservation) return mockVaultReservationRepository;
+      return null;
+    }),
   };
 
   const mockApyHistoryQB = {
@@ -107,23 +166,6 @@ describe('VaultsService — Yield Strategy Integration', () => {
     createQueryBuilder: jest.fn().mockReturnValue(mockApyHistoryQB),
   };
 
-  const mockEventEmitter = {
-    emit: jest.fn(),
-  };
-
-  const mockDepositRepository = {
-    create: jest.fn(),
-    findOne: jest.fn(),
-    update: jest.fn(),
-    createQueryBuilder: jest.fn(),
-  };
-
-  const mockWithdrawalRepository = {
-    create: jest.fn(),
-    findOne: jest.fn(),
-    update: jest.fn(),
-  };
-
   const mockNotificationsService = {
     create: jest.fn().mockResolvedValue(undefined),
   };
@@ -131,6 +173,9 @@ describe('VaultsService — Yield Strategy Integration', () => {
   const mockVaultGateway = {
     emitDeposit: jest.fn(),
     emitWithdrawal: jest.fn(),
+  };
+  const mockEventEmitter = {
+    emit: jest.fn(),
   };
   const mockContractCache = {
     getVaultState: jest.fn((_id: string, loader: () => Promise<unknown>) =>
@@ -154,16 +199,20 @@ describe('VaultsService — Yield Strategy Integration', () => {
         VaultsService,
         { provide: getRepositoryToken(Vault), useValue: mockVaultRepository },
         {
-          provide: getRepositoryToken(VaultApyHistory),
-          useValue: mockVaultApyHistoryRepository,
-        },
-        {
           provide: getRepositoryToken(Deposit),
           useValue: mockDepositRepository,
         },
         {
           provide: getRepositoryToken(Withdrawal),
           useValue: mockWithdrawalRepository,
+        },
+        {
+          provide: getRepositoryToken(VaultReservation),
+          useValue: mockVaultReservationRepository,
+        },
+        {
+          provide: getRepositoryToken(VaultApyHistory),
+          useValue: mockVaultApyHistoryRepository,
         },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NotificationsService, useValue: mockNotificationsService },

@@ -14,6 +14,7 @@ import { Withdrawal } from '../database/entities/withdrawal.entity';
 import { VaultReservation } from './entities/vault-reservation.entity';
 import { VaultApyHistory } from '../database/entities/vault-apy-history.entity';
 import { InsuranceClaim } from '../database/entities/insurance-claim.entity';
+import { User } from '../database/entities/user.entity';
 import { DepositEventService } from './deposit-event.service';
 import { WithdrawalConfirmedHandler } from './events/withdrawal-confirmed.handler';
 import { StellarModule } from '../stellar/stellar.module';
@@ -25,14 +26,17 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { CommonModule } from '../common/common.module';
 
+import { CqrsModule } from '@nestjs/cqrs';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Vault, Deposit, DepositEvent, Withdrawal, VaultReservation, VaultApyHistory, InsuranceClaim]),
+    TypeOrmModule.forFeature([Vault, Deposit, DepositEvent, Withdrawal, VaultReservation, VaultApyHistory, InsuranceClaim, User]),
     AuthModule,
     NotificationsModule,
     RealtimeModule,
     CommonModule,
     StellarModule,
+    CqrsModule,
   ],
   controllers: [VaultsController, InsuranceFundController],
   providers: [VaultsService, DepositEventService, WithdrawalConfirmedHandler, VaultAccountMonitorService, InsuranceFundService],

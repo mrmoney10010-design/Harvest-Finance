@@ -32,6 +32,7 @@ import { CoopOrder } from './entities/coop-order.entity';
 import { CoopReview } from './entities/coop-review.entity';
 import { VaultReservation } from '../vaults/entities/vault-reservation.entity';
 import { CreateInitialSchema1700000000000 } from './migrations/1700000000000-CreateInitialSchema';
+import { CreateVaultsAndDeposits1700000000001 } from './migrations/1700000000001-CreateVaultsAndDeposits';
 import { CreateAchievements1700000000004 } from './migrations/1700000000004-CreateAchievements';
 import { CreateRewards1700000000005 } from './migrations/1700000000005-CreateRewards';
 import { CreateNotifications1700000000006 } from './migrations/1700000000006-CreateNotifications';
@@ -100,21 +101,7 @@ const options: DataSourceOptions = {
     CoopOrder,
     CoopReview,
   ],
-  migrations: [
-    CreateInitialSchema1700000000000,
-    CreateAchievements1700000000004,
-    CreateRewards1700000000005,
-    CreateNotifications1700000000006,
-    CreateWithdrawals1700000000007,
-    CreateFarmVaults1700000000008,
-    CreateInsurance1700000000009,
-    AddInsuranceNotificationType1700000000010,
-    CreateSorobanEvents1700000000011,
-    CreateYieldAnalytics1700000000012,
-    AddSorobanEventQueryIndexes1700000000013,
-    CreateDepositEvents1700000000016,
-    CreateVaultReservations1700000000018,
-  ],
+  migrations: [__dirname + '/migrations/*{.ts,.js}'],
   // synchronize must remain false in all non-test environments.
   // Use `npm run migration:run` to apply schema changes safely.
   synchronize: isTestEnv,

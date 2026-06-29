@@ -58,51 +58,51 @@ export class User {
   })
   role: UserRole;
 
-  @Column({ name: 'stellar_address', nullable: true })
+  @Column({ name: 'stellar_address', type: 'varchar', nullable: true })
   stellarAddress: string | null;
 
-  @Column({ name: 'solana_address', nullable: true })
+  @Column({ name: 'solana_address', type: 'varchar', nullable: true })
   solanaAddress: string | null;
 
-  @Column({ name: 'ethereum_address', nullable: true })
+  @Column({ name: 'ethereum_address', type: 'varchar', nullable: true })
   ethereumAddress: string | null;
 
-  @Column({ name: 'polygon_address', nullable: true })
+  @Column({ name: 'polygon_address', type: 'varchar', nullable: true })
   polygonAddress: string | null;
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
-  @Column({ name: 'first_name', nullable: true })
+  @Column({ name: 'first_name', type: 'varchar', nullable: true })
   firstName: string | null;
 
-  @Column({ name: 'last_name', nullable: true })
+  @Column({ name: 'last_name', type: 'varchar', nullable: true })
   lastName: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phone: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   address: string | null;
 
-  @Column({ name: 'profile_image_url', nullable: true })
+  @Column({ name: 'profile_image_url', type: 'varchar', nullable: true })
   profileImageUrl: string | null;
 
-  @Column({ name: 'last_login', nullable: true })
+  @Column({ name: 'last_login', type: 'timestamp', nullable: true })
   lastLogin: Date | null;
 
-  @Column({ name: 'refresh_token', select: false, nullable: true })
+  @Column({ name: 'refresh_token', type: 'varchar', select: false, nullable: true })
   @Exclude()
   refreshToken: string | null;
 
-  @Column({ name: 'reset_password_token', select: false, nullable: true })
+  @Column({ name: 'reset_password_token', type: 'varchar', select: false, nullable: true })
   @Exclude()
   resetPasswordToken: string | null;
 
-  @Column({ name: 'reset_password_expires', nullable: true })
+  @Column({ name: 'reset_password_expires', type: 'timestamp', nullable: true })
   resetPasswordExpires: Date | null;
 
-  @Column({ name: 'locked_until', nullable: true, default: null })
+  @Column({ name: 'locked_until', type: 'timestamp', nullable: true, default: null })
   lockedUntil: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })

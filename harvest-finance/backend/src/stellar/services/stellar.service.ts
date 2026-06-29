@@ -1258,5 +1258,5 @@ export class StellarService implements OnModuleInit {
   ): Promise<StellarSdk.Horizon.HorizonApi.SubmitTransactionResponse> {
     return this.client.submitTransaction(transaction, context);
   }
-  }
 }
+
