@@ -8,13 +8,16 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { StellarStrategy } from './strategies/stellar.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GithubStrategy } from './strategies/github.strategy';
+import { SessionsController } from './sessions.controller';
 import { User } from '../database/entities/user.entity';
 import { UserOAuthLink } from '../database/entities/user-oauth-link.entity';
+import { Session } from '../database/entities/session.entity';
+import { SecurityEvent } from '../database/entities/security-event.entity';
 import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserOAuthLink]),
+    TypeOrmModule.forFeature([User, UserOAuthLink, Session, SecurityEvent]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: 'super_secret_jwt_key',
@@ -24,7 +27,7 @@ import { CommonModule } from '../common/common.module';
     }),
     CommonModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, SessionsController],
   providers: [AuthService, JwtStrategy, StellarStrategy, GoogleStrategy, GithubStrategy],
   exports: [AuthService, JwtStrategy, StellarStrategy, GoogleStrategy, GithubStrategy, PassportModule],
 })
