@@ -41,6 +41,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { AppConfigModule } from './config/config.module'; 
+import { TelegramModule } from './integrations/telegram/telegram.module';
 
 import {
   Achievement,
@@ -198,7 +199,7 @@ import { CreateCustodialWallets1700000000021 } from './database/migrations/17000
     StateSyncModule,
     WebhooksModule,
     DomainEventHandlersModule,
-    WalletsModule,
+    TelegramModule,
   ],
   controllers: [AppController],
   providers: [

@@ -16,6 +16,9 @@ import { randomBytes } from 'crypto';
 import { CustomLoggerService } from '../logger/custom-logger.service';
 import { User, UserRole, WalletType } from '../database/entities/user.entity';
 import { UserOAuthLink } from '../database/entities/user-oauth-link.entity';
+const zxcvbn = require('zxcvbn');
+import * as crypto from 'crypto';
+import { Session } from '../database/entities/session.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -62,6 +65,8 @@ export class AuthService {
     private userRepository: Repository<User>,
     @InjectRepository(UserOAuthLink)
     private oauthLinkRepository: Repository<UserOAuthLink>,
+    @InjectRepository(Session)
+    private sessionRepository: Repository<Session>,
     private jwtService: JwtService,
     private configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -100,6 +105,8 @@ export class AuthService {
     const nameParts = full_name.trim().split(' ');
     const firstName = nameParts[0];
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+
+    await this.validatePasswordStrength(password);
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, this.saltRounds);
@@ -485,11 +492,17 @@ export class AuthService {
       }),
     ]);
 
-    // Store refresh token in database
+    // Store refresh token in database (Session)
     const hashedRefreshToken = await bcrypt.hash(refreshToken, this.saltRounds);
-    await this.userRepository.update(user.id, {
+    const session = this.sessionRepository.create({
+      user,
       refreshToken: hashedRefreshToken,
+      userAgent: 'Unknown', // Typically passed from request
+      ipAddress: 'Unknown', // Typically passed from request
+      lastUsedAt: new Date(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
+    await this.sessionRepository.save(session);
 
     return { accessToken, refreshToken };
   }
@@ -579,5 +592,71 @@ export class AuthService {
       refresh_token: tokens.refreshToken,
       user: this.mapUserToResponse(user),
     };
+  }
+
+  async validatePasswordStrength(password: string): Promise<void> {
+    const result = zxcvbn(password);
+    if (result.score < 3 || password.length < 12) {
+      throw new BadRequestException('Password is too weak. Must be at least 12 characters.');
+    }
+    const hash = crypto.createHash('sha1').update(password).digest('hex').toUpperCase();
+    const prefix = hash.slice(0, 5);
+    const suffix = hash.slice(5);
+    try {
+      const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+      const text = await response.text();
+      if (text.includes(suffix)) {
+        throw new BadRequestException('Password has been found in a data breach. Please choose another.');
+      }
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err;
+      this.logger.warn('Failed to check HIBP API', 'AuthService');
+    }
+  }
+
+  async verifyEmail(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(token, { secret: this.configService.get('JWT_SECRET') || 'super_secret_jwt_key' });
+      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      if (user) {
+        user.emailVerifiedAt = new Date();
+        await this.userRepository.save(user);
+        return { success: true };
+      }
+    } catch (e) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+    throw new BadRequestException('User not found');
+  }
+
+  async resendVerification(userId: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+    const token = await this.jwtService.signAsync({ sub: user.id }, { secret: this.configService.get('JWT_SECRET') || 'super_secret_jwt_key', expiresIn: '24h' });
+    this.logger.log(`Resending verification to ${user.email}: ${token}`, 'AuthService');
+    return { success: true };
+  }
+
+  async getSessions(userId: string, page: number, limit: number) {
+    const [items, total] = await this.sessionRepository.findAndCount({
+      where: { user: { id: userId } },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { items, total };
+  }
+
+  async revokeSession(userId: string, sessionId: string) {
+    await this.sessionRepository.delete({ id: sessionId, user: { id: userId } });
+    return { success: true };
+  }
+
+  async revokeAllSessions(userId: string, currentSessionId?: string) {
+    const query = this.sessionRepository.createQueryBuilder().delete().where('user_id = :userId', { userId });
+    if (currentSessionId) {
+      query.andWhere('id != :currentSessionId', { currentSessionId });
+    }
+    await query.execute();
+    return { success: true };
   }
 }
