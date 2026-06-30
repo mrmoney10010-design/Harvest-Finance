@@ -82,6 +82,8 @@ export enum VaultStatus {
 @Index('idx_vaults_type', ['type'])
 @Index('idx_vaults_status', ['status'])
 export class Vault {
+  @Column({ name: 'strategy_score', type: 'float', default: 0, nullable: true })
+  strategyScore: number | null;
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -114,6 +116,9 @@ export class Vault {
 
   @Column({ type: 'decimal', precision: 18, scale: 8, default: 0 })
   interestRate: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 4, default: 0.5 })
+  depositorConcentrationThreshold: number;
 
   @Column({
     name: 'compounding_frequency',

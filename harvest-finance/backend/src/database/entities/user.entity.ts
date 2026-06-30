@@ -13,6 +13,7 @@ import { Order } from './order.entity';
 import { Verification } from './verification.entity';
 import { CreditScore } from './credit-score.entity';
 import { UserOAuthLink } from './user-oauth-link.entity';
+import { Session } from './session.entity';
 
 /**
  * User roles in the agricultural marketplace
@@ -94,6 +95,16 @@ export class User {
   @Column({ name: 'refresh_token', type: 'varchar', select: false, nullable: true })
   @Exclude()
   refreshToken: string | null;
+
+  @Column({ name: 'email_verified_at', nullable: true })
+  emailVerifiedAt: Date | null;
+
+  @Column({ name: 'email_verification_token', nullable: true })
+  @Exclude()
+  emailVerificationToken: string | null;
+
+  @OneToMany(() => Session, (session) => session.user)
+  sessions: Session[];
 
   @Column({ name: 'reset_password_token', type: 'varchar', select: false, nullable: true })
   @Exclude()

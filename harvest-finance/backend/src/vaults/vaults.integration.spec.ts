@@ -166,6 +166,7 @@ describe('VaultsService — Yield Strategy Integration', () => {
     createQueryBuilder: jest.fn().mockReturnValue(mockApyHistoryQB),
   };
 
+
   const mockNotificationsService = {
     create: jest.fn().mockResolvedValue(undefined),
   };
