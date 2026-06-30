@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, FindOptionsWhere, LessThan, MoreThan } from 'typeorm';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Vault, VaultStatus } from '../database/entities/vault.entity';
 import { Deposit, DepositStatus } from '../database/entities/deposit.entity';
 import { VaultApyHistory } from '../database/entities/vault-apy-history.entity';
@@ -38,6 +38,7 @@ import { InputSanitizerService } from '../common/sanitization/input-sanitizer.se
 import { VaultApproval } from '../database/entities/vault-approval.entity';
 import { User } from '../database/entities/user.entity';
 import { DepositEventService } from './deposit-event.service';
+import { WithdrawalQueueService } from './withdrawal-queue.service';
 import { DepositEventResponseDto } from './dto/deposit-event-response.dto';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
@@ -72,6 +73,7 @@ export class VaultsService {
     private sanitizer: InputSanitizerService,
     private depositEventService: DepositEventService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly withdrawalQueueService: WithdrawalQueueService,
   ) {}
 
   async getVaultById(vaultId: string): Promise<Vault> {
@@ -1005,12 +1007,45 @@ export class VaultsService {
         type: NotificationType.WITHDRAWAL, // Fixed: should be WITHDRAWAL, not DEPOSIT
       });
 
-    return {
-      withdrawal: result.withdrawal,
-      vault: result.vault
-        ? this.mapVaultToResponse(result.vault)
-        : this.mapVaultToResponse(vault),
-    };
+      return {
+        withdrawal: result.withdrawal,
+        vault: result.vault
+          ? this.mapVaultToResponse(result.vault)
+          : this.mapVaultToResponse(vault),
+      };
+    } else {
+      // Insufficient liquidity: enqueue withdrawal
+      const withdrawal = this.withdrawalRepository.create({
+        userId,
+        vaultId,
+        amount,
+        status: WithdrawalStatus.PENDING,
+      });
+
+      const savedWithdrawal = await this.withdrawalRepository.save(withdrawal);
+
+      await this.withdrawalQueueService.enqueueWithdrawal(savedWithdrawal.id);
+
+      const queuedWithdrawal = await this.withdrawalRepository.findOne({
+        where: { id: savedWithdrawal.id },
+      });
+
+      if (!queuedWithdrawal) {
+        throw new NotFoundException('Withdrawal not found after queuing');
+      }
+
+      await this.notificationsService.create({
+        userId,
+        title: 'Withdrawal Queued',
+        message: `Your withdrawal of ${amount} from vault ${vault.vaultName} has been queued due to insufficient liquidity.`,
+        type: NotificationType.WITHDRAWAL,
+      });
+
+      return {
+        withdrawal: queuedWithdrawal,
+        vault: this.mapVaultToResponse(vault),
+      };
+    }
   }
 
   private mapDepositToResponse(deposit: Deposit): DepositResponseDto {

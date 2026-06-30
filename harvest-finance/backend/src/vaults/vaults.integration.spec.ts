@@ -31,6 +31,7 @@ import { VaultGateway } from '../realtime/vault.gateway';
 import { ContractCacheService } from '../common/cache/contract-cache.service';
 import { InputSanitizerService } from '../common/sanitization/input-sanitizer.service';
 import { DepositEventService } from './deposit-event.service';
+import { WithdrawalQueueService } from './withdrawal-queue.service';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const OTHER_USER_ID = '99999999-9999-9999-9999-999999999999';
@@ -193,6 +194,10 @@ describe('VaultsService — Yield Strategy Integration', () => {
     getVaultDepositHistory: jest.fn().mockResolvedValue([]),
     mapEventToResponse: jest.fn((event) => event),
   };
+  const mockWithdrawalQueueService = {
+    enqueueWithdrawal: jest.fn().mockResolvedValue(undefined),
+    processWithdrawalQueue: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -223,6 +228,7 @@ describe('VaultsService — Yield Strategy Integration', () => {
         { provide: InputSanitizerService, useValue: mockSanitizer },
         { provide: DepositEventService, useValue: mockDepositEventService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
+        { provide: WithdrawalQueueService, useValue: mockWithdrawalQueueService },
       ],
     }).compile();
 
@@ -302,7 +308,7 @@ describe('VaultsService — Yield Strategy Integration', () => {
       const mockUser = { id: USER_ID, stellarAddress: 'GUSER' };
       mockDataSource.getRepository.mockReturnValue({
         findOne: jest.fn().mockResolvedValue(mockUser),
-      });
+      } as any);
 
       mockDepositRepository.findOne
         .mockResolvedValueOnce({ ...pendingDeposit, amount: 500 })
@@ -519,6 +525,7 @@ describe('VaultsService — Yield Strategy Integration', () => {
       mockVaultRepository.findOne.mockResolvedValue(vault);
       mockDepositRepository.createQueryBuilder.mockReturnValue(buildQB('5000'));
       mockWithdrawalRepository.create.mockReturnValue(pendingWithdrawal);
+      mockWithdrawalRepository.findOne.mockResolvedValue(confirmedWithdrawal);
       mockManager.save.mockResolvedValue(pendingWithdrawal);
       mockManager.decrement.mockResolvedValue(undefined);
       mockManager.findOne.mockResolvedValue(updatedVault);

@@ -25,6 +25,7 @@ import { ContractCacheService } from '../common/cache/contract-cache.service';
 import { InputSanitizerService } from '../common/sanitization/input-sanitizer.service';
 import { DepositEventService } from './deposit-event.service';
 import { ExternalPaymentEventType } from './dto/external-payment-notification.dto';
+import { WithdrawalQueueService } from './withdrawal-queue.service';
 
 describe('VaultsService', () => {
   let service: VaultsService;
@@ -102,6 +103,7 @@ describe('VaultsService', () => {
     find: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
+    update: jest.fn(),
     delete: jest.fn(),
     createQueryBuilder: jest.fn().mockReturnValue(mockReservationQB),
   };
@@ -175,6 +177,10 @@ describe('VaultsService', () => {
     getVaultDepositHistory: jest.fn().mockResolvedValue([]),
     mapEventToResponse: jest.fn((event) => event),
   };
+  const mockWithdrawalQueueService = {
+    enqueueWithdrawal: jest.fn().mockResolvedValue(undefined),
+    processWithdrawalQueue: jest.fn().mockResolvedValue(undefined),
+  };
 
   // Helper: build a query builder stub that returns a given total
   const buildQB = (total: string | null) => ({
@@ -213,6 +219,7 @@ describe('VaultsService', () => {
         { provide: ContractCacheService, useValue: mockContractCache },
         { provide: InputSanitizerService, useValue: mockSanitizer },
         { provide: DepositEventService, useValue: mockDepositEventService },
+        { provide: WithdrawalQueueService, useValue: mockWithdrawalQueueService },
       ],
     }).compile();
 
@@ -966,7 +973,7 @@ describe('VaultsService', () => {
       // Stub dataSource.getRepository to return a mock user repo that returns no admin
       mockDataSource.getRepository.mockReturnValue({
         findOne: jest.fn().mockResolvedValue({ role: 'FARMER' }),
-      });
+      } as any);
 
       await expect(
         service.pauseVault('vault-1', 'user-1'),
@@ -1022,7 +1029,7 @@ describe('VaultsService', () => {
       mockVaultRepository.findOne.mockResolvedValue(frozenVault);
       mockDataSource.getRepository.mockReturnValue({
         findOne: jest.fn().mockResolvedValue({ role: 'FARMER' }),
-      });
+      } as any);
 
       await expect(
         service.resumeVault('vault-1', 'user-1'),
@@ -1060,7 +1067,7 @@ describe('VaultsService', () => {
       mockVaultRepository.findOne.mockResolvedValue(otherOwnerVault);
       mockDataSource.getRepository.mockReturnValue({
         findOne: jest.fn().mockResolvedValue({ role: 'FARMER' }),
-      });
+      } as any);
 
       await expect(
         service.updateVaultMultiSignatureConfig('vault-1', 'user-1', true, 2),
@@ -1278,7 +1285,7 @@ describe('VaultsService', () => {
     beforeEach(() => {
       mockDataSource.getRepository.mockReturnValue({
         findOne: jest.fn().mockResolvedValue(null),
-      });
+      } as any);
       mockReservationQB.getRawOne.mockResolvedValue({ total: null });
     });
 
@@ -1294,7 +1301,7 @@ describe('VaultsService', () => {
           isActive: true,
           createdAt: new Date(),
         };
-        mockReservationRepository.save.mockResolvedValue(savedReservation);
+        mockVaultReservationRepository.save.mockResolvedValue(savedReservation);
 
         const result = await service.createReservation('vault-1', 'user-1', {
           walletAddress: 'GBXXX',
@@ -1304,7 +1311,7 @@ describe('VaultsService', () => {
 
         expect(result.walletAddress).toBe('GBXXX');
         expect(result.reservedAmount).toBe(2000);
-        expect(mockReservationRepository.create).toHaveBeenCalledWith(
+        expect(mockVaultReservationRepository.create).toHaveBeenCalledWith(
           expect.objectContaining({
             vaultId: 'vault-1',
             walletAddress: 'GBXXX',
@@ -1345,8 +1352,8 @@ describe('VaultsService', () => {
         mockVaultRepository.findOne.mockResolvedValue(mockVault);
         mockDataSource.getRepository.mockReturnValue({
           findOne: jest.fn().mockResolvedValue({ stellarAddress: 'GBRESERVED' }),
-        });
-        mockReservationRepository.findOne.mockResolvedValue({
+        } as any);
+        mockVaultReservationRepository.findOne.mockResolvedValue({
           reservedAmount: 500,
         });
 
@@ -1367,11 +1374,11 @@ describe('VaultsService', () => {
 
     describe('expireReservations', () => {
       it('should deactivate expired reservations', async () => {
-        mockReservationRepository.update.mockResolvedValue({ affected: 3 });
+        mockVaultReservationRepository.update.mockResolvedValue({ affected: 3 });
 
         await service.expireReservations();
 
-        expect(mockReservationRepository.update).toHaveBeenCalledWith(
+        expect(mockVaultReservationRepository.update).toHaveBeenCalledWith(
           expect.objectContaining({ isActive: true }),
           { isActive: false },
         );

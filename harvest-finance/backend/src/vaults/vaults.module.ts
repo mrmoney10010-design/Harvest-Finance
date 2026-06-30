@@ -26,7 +26,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { CommonModule } from '../common/common.module';
 
-import { CqrsModule } from '@nestjs/cqrs';
+import { WithdrawalQueueService } from './withdrawal-queue.service';
 
 @Module({
   imports: [
@@ -39,7 +39,7 @@ import { CqrsModule } from '@nestjs/cqrs';
     CqrsModule,
   ],
   controllers: [VaultsController, InsuranceFundController],
-  providers: [VaultsService, DepositEventService, WithdrawalConfirmedHandler, VaultAccountMonitorService, InsuranceFundService],
-  exports: [VaultsService, DepositEventService, InsuranceFundService],
+  providers: [VaultsService, DepositEventService, WithdrawalConfirmedHandler, VaultAccountMonitorService, InsuranceFundService, WithdrawalQueueService],
+  exports: [VaultsService, DepositEventService, InsuranceFundService, WithdrawalQueueService],
 })
 export class VaultsModule {}
